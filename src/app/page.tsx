@@ -1,27 +1,62 @@
-import { AboutPreview } from "@/components/about-preview";
-import { CTASection } from "@/components/cta-section";
-import { FeaturedProjects } from "@/components/featured-projects";
-import { Footer } from "@/components/footer";
-import { CreativeStatement } from "@/components/creative-statement";
-import { GalleryPreview } from "@/components/gallery-preview";
-import { HeroSection } from "@/components/hero-section";
-import { Navbar } from "@/components/navbar";
-import { Testimonials } from "@/components/testimonials";
+import { AboutPreview } from "@/frontend/components/about-preview";
+import { CTASection } from "@/frontend/components/cta-section";
+import { FeaturedProjects } from "@/frontend/components/featured-projects";
+import { Footer } from "@/frontend/components/footer";
+import { CreativeStatement } from "@/frontend/components/creative-statement";
+import { GalleryPreview } from "@/frontend/components/gallery-preview";
+import { HeroSection } from "@/frontend/components/hero-section";
+import { Navbar } from "@/frontend/components/navbar";
+import { RatingComments } from "@/frontend/components/rating-comments";
+import { Testimonials } from "@/frontend/components/testimonials";
+import { getHomepageShowcase } from "@/backend/public-content";
+import { getPortfolioReviewSummary } from "@/backend/portfolio-reviews";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const [showcase, reviewSummary] = await Promise.all([
+    getHomepageShowcase(),
+    getPortfolioReviewSummary()
+  ]);
+
   return (
     <>
       <Navbar />
       <main>
-        <HeroSection />
-        <FeaturedProjects />
+        <HeroSection
+          eyebrow={showcase.settings.homepage.heroEyebrow}
+          headline={showcase.settings.homepage.heroHeadline}
+          imageUrl={showcase.settings.homepage.heroImageUrl}
+          primaryLabel={showcase.settings.homepage.heroPrimaryLabel}
+          secondaryLabel={showcase.settings.homepage.heroSecondaryLabel}
+          showVideo={showcase.settings.homepage.heroVideoEnabled}
+          subtitle={showcase.settings.homepage.heroSubtitle}
+          videoUrl={showcase.settings.homepage.heroVideoUrl}
+        />
+        {showcase.settings.homepage.featuredProjectsEnabled ? (
+          <FeaturedProjects
+            heading={showcase.settings.homepage.featuredSectionTitle}
+            projects={showcase.featuredProjects}
+          />
+        ) : null}
         <CreativeStatement />
-        <GalleryPreview />
+        <GalleryPreview items={showcase.galleryPreviewItems} />
         <AboutPreview />
         <Testimonials />
-        <CTASection />
+        {showcase.settings.homepage.bookingCtaEnabled ? (
+          <CTASection
+            headline={showcase.settings.homepage.bookingCta}
+          />
+        ) : null}
+        {showcase.settings.homepage.ratingCommentsEnabled ? (
+          <RatingComments
+            averageRating={reviewSummary.averageRating}
+            reviewCount={reviewSummary.reviewCount}
+            reviews={reviewSummary.reviews}
+          />
+        ) : null}
       </main>
-      <Footer />
+      <Footer settings={showcase.settings} />
     </>
   );
 }

@@ -5,14 +5,26 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node scripts/seed-database.mjs",
+    "db:studio": "prisma studio",
+    "hash:admin-password": "node scripts/hash-admin-password.mjs",
+    "import:erishot-images": "node scripts/import-erishot-images.mjs",
+    "verify:admin-login": "node scripts/verify-admin-login.mjs",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "bcryptjs": "^3.0.3",
     "framer-motion": "^11.11.17",
     "next": "14.2.16",
+    "pg": "^8.21.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.16.11",
@@ -22,6 +34,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.16",
     "postcss": "^8.4.47",
+    "prisma": "^7.8.0",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3"
   }

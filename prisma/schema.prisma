@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AdminMediaType {
+  Photo
+  Video
+  Gallery
+}
+
+enum AdminProjectStatus {
+  Draft
+  Review
+  Published
+  Featured
+}
+
+enum ContactMessageStatus {
+  Unread
+  Open
+  Replied
+}
+
+enum MediaAssetStatus {
+  Stored
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+model Project {
+  id           String             @id @default(cuid())
+  title        String
+  category     String
+  status       AdminProjectStatus @default(Draft)
+  date         String
+  description  String             @default("")
+  mediaType    AdminMediaType
+  featured     Boolean            @default(false)
+  thumbnailUrl String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  media        MediaAsset[]
+
+  @@map("projects")
+}
+
+model MediaAsset {
+  id          String           @id @default(cuid())
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  category    String
+  mediaType   AdminMediaType
+  description String           @default("")
+  status      MediaAssetStatus @default(Stored)
+  fileName    String?
+  fileType    String?
+  fileSize    Int?
+  url         String?
+  createdAt   DateTime         @default(now())
+
+  @@index([projectId])
+  @@map("media_assets")
+}
+
+model ContactMessage {
+  id        String               @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String               @default("")
+  service   String
+  message   String
+  status    ContactMessageStatus @default(Unread)
+  createdAt DateTime             @default(now())
+
+  @@map("contact_messages")
+}
+
+model PortfolioReview {
+  id        String   @id @default(cuid())
+  name      String   @default("Guest")
+  rating    Int
+  note      String
+  createdAt DateTime @default(now())
+
+  @@map("portfolio_reviews")
+}
+
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}

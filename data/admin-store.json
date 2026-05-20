@@ -1,0 +1,89 @@
+{
+  "projects": [
+    {
+      "id": "project-1779086624758",
+      "title": "weddings",
+      "category": "Weddings",
+      "status": "Draft",
+      "date": "May 2026",
+      "description": "hh",
+      "mediaType": "Photo",
+      "featured": false,
+      "thumbnailUrl": "/uploads/admin/1779086624758-weddings.jpg",
+      "updatedAt": "2026-05-18T06:43:44.758Z"
+    },
+    {
+      "id": "project-raw-visions",
+      "title": "Raw Visions",
+      "category": "Commercial",
+      "status": "Published",
+      "date": "May 2026",
+      "description": "Homepage hero film and campaign selects.",
+      "mediaType": "Video",
+      "featured": true,
+      "thumbnailUrl": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80",
+      "updatedAt": "2026-05-18T00:00:00.000Z"
+    },
+    {
+      "id": "project-street-machine",
+      "title": "Street Machine",
+      "category": "Cars",
+      "status": "Featured",
+      "date": "Apr 2026",
+      "description": "Automotive story with night-grade editorial energy.",
+      "mediaType": "Photo",
+      "featured": true,
+      "thumbnailUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80",
+      "updatedAt": "2026-04-12T00:00:00.000Z"
+    },
+    {
+      "id": "project-story-teller",
+      "title": "The Story Teller",
+      "category": "Street",
+      "status": "Draft",
+      "date": "Mar 2026",
+      "description": "Portrait session pending final notes.",
+      "mediaType": "Gallery",
+      "featured": false,
+      "thumbnailUrl": "https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&w=1400&q=80",
+      "updatedAt": "2026-03-30T00:00:00.000Z"
+    }
+  ],
+  "media": [
+    {
+      "id": "media-1779086624758",
+      "projectId": "project-1779086624758",
+      "title": "weddings",
+      "category": "Weddings",
+      "mediaType": "Photo",
+      "description": "hh",
+      "status": "Stored",
+      "createdAt": "2026-05-18T06:43:44.758Z",
+      "fileName": "1779086624758-weddings.jpg",
+      "fileType": "image/jpeg",
+      "fileSize": 167618,
+      "url": "/uploads/admin/1779086624758-weddings.jpg"
+    },
+    {
+      "id": "media-raw-visions",
+      "projectId": "project-raw-visions",
+      "title": "Raw Visions",
+      "category": "Commercial",
+      "mediaType": "Video",
+      "description": "Hero video record.",
+      "status": "Stored",
+      "createdAt": "2026-05-18T00:00:00.000Z"
+    },
+    {
+      "id": "media-street-machine",
+      "projectId": "project-street-machine",
+      "title": "Street Machine",
+      "category": "Cars",
+      "mediaType": "Photo",
+      "description": "Featured automotive gallery.",
+      "status": "Stored",
+      "createdAt": "2026-04-12T00:00:00.000Z"
+    }
+  ],
+  "messages": []
+}
