@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { prisma } from "@/backend/prisma";
 import type {
@@ -26,6 +26,8 @@ type AddContactMessageInput = Pick<
 >;
 
 type UpdateSiteSettingsInput = AdminSiteSettings;
+
+type UpdateAdminMediaInput = AddAdminMediaInput;
 
 type StoredUpload = Pick<
   AdminMediaAsset,
@@ -223,6 +225,21 @@ async function saveUploadedFile(
     fileSize: file.size,
     url: `/uploads/admin/${fileName}`
   };
+}
+
+async function deleteStoredUpload(url: string | null) {
+  if (!url?.startsWith("/uploads/admin/")) {
+    return;
+  }
+
+  const fileName = path.basename(url);
+  const filePath = path.join(uploadDirectory, fileName);
+
+  if (!filePath.startsWith(uploadDirectory)) {
+    return;
+  }
+
+  await unlink(filePath).catch(() => null);
 }
 
 async function ensureStarterData() {
@@ -447,6 +464,75 @@ export async function addAdminMedia(input: AddAdminMediaInput, file: File | null
       url: uploadedFile.url
     }
   });
+
+  return getAdminData();
+}
+
+export async function updateAdminMedia(
+  mediaId: string,
+  input: UpdateAdminMediaInput
+) {
+  const title = input.title.trim();
+
+  if (!title) {
+    throw new Error("Project title is required.");
+  }
+
+  const asset = await prisma.mediaAsset.findUnique({
+    where: { id: mediaId },
+    include: { project: true }
+  });
+
+  if (!asset) {
+    throw new Error("Media record not found.");
+  }
+
+  const description = input.description.trim();
+
+  await prisma.project.update({
+    where: { id: asset.projectId },
+    data: {
+      title,
+      category: input.category,
+      description,
+      mediaType: input.mediaType,
+      thumbnailUrl:
+        asset.fileType?.startsWith("image/") && asset.url
+          ? asset.url
+          : asset.project.thumbnailUrl
+    }
+  });
+
+  await prisma.mediaAsset.update({
+    where: { id: mediaId },
+    data: {
+      title,
+      category: input.category,
+      mediaType: input.mediaType,
+      description
+    }
+  });
+
+  return getAdminData();
+}
+
+export async function deleteAdminMedia(mediaId: string) {
+  const asset = await prisma.mediaAsset.findUnique({
+    where: { id: mediaId },
+    select: {
+      projectId: true,
+      url: true
+    }
+  });
+
+  if (!asset) {
+    throw new Error("Media record not found.");
+  }
+
+  await prisma.project.delete({
+    where: { id: asset.projectId }
+  });
+  await deleteStoredUpload(asset.url);
 
   return getAdminData();
 }

@@ -19,12 +19,15 @@ export type EditorialNote = {
 };
 
 export const portfolioCategoryOptions = [
+  "Africa Night",
   "Animal",
+  "Eritrea",
   "Weddings",
   "Street",
   "Cars",
   "Graduation",
   "Nature",
+  "Portraits",
   "Sport",
   "Events",
   "Commercial"

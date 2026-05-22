@@ -14,6 +14,8 @@ type AddPortfolioReviewInput = {
   note: string;
 };
 
+const visibleReviewLimit = 3;
+
 function toPortfolioReview(review: {
   id: string;
   name: string;
@@ -60,7 +62,7 @@ export async function getPortfolioReviewSummary(): Promise<PortfolioReviewSummar
     [reviews, aggregate] = await Promise.all([
       prisma.portfolioReview.findMany({
         orderBy: { createdAt: "desc" },
-        take: 3
+        take: visibleReviewLimit
       }),
       prisma.portfolioReview.aggregate({
         _avg: { rating: true },
@@ -75,7 +77,7 @@ export async function getPortfolioReviewSummary(): Promise<PortfolioReviewSummar
     return {
       averageRating: Number(ratingSummary.score),
       reviewCount: 0,
-      reviews: fallbackReviews().slice(0, 3)
+      reviews: fallbackReviews().slice(0, visibleReviewLimit)
     };
   }
 

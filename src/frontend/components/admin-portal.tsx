@@ -80,6 +80,8 @@ const messageStatusOrder: ContactMessageStatus[] = [
   "Replied"
 ];
 
+const addCategoryOption = "__add_category__";
+
 const homepageControls: Array<{
   key: keyof Pick<
     AdminSiteSettings["homepage"],
@@ -104,6 +106,32 @@ function getNextProjectStatus(status: AdminProjectStatus) {
 function getNextMessageStatus(status: ContactMessageStatus) {
   const currentIndex = messageStatusOrder.indexOf(status);
   return messageStatusOrder[(currentIndex + 1) % messageStatusOrder.length];
+}
+
+function addUniqueCategory(categories: string[], category: string) {
+  const nextCategory = category.trim();
+
+  if (
+    nextCategory &&
+    !categories.some(
+      (currentCategory) =>
+        currentCategory.toLowerCase() === nextCategory.toLowerCase()
+    )
+  ) {
+    categories.push(nextCategory);
+  }
+}
+
+function isKnownCategory(category: string, categoryOptions: string[]) {
+  return categoryOptions.some((option) => option === category);
+}
+
+function readCategorySelection(value: string, currentCategory: string) {
+  if (value !== addCategoryOption) {
+    return value;
+  }
+
+  return window.prompt("New category name")?.trim() || currentCategory;
 }
 
 function getDashboardStats(data: AdminStore) {
@@ -168,7 +196,15 @@ function getMessageReplyHref(message: ContactMessage) {
     message.message
   ].join("\n");
 
-  return `mailto:${message.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const params = new URLSearchParams({
+    view: "cm",
+    fs: "1",
+    to: message.email,
+    su: subject,
+    body
+  });
+
+  return `https://mail.google.com/mail/?${params.toString()}`;
 }
 
 async function readApiResponse(response: Response) {
@@ -204,6 +240,9 @@ export function AdminPortal() {
   const [fileInputKey, setFileInputKey] = useState(0);
   const [uploadNotice, setUploadNotice] = useState("");
   const [isSavingUpload, setIsSavingUpload] = useState(false);
+  const [editingMediaId, setEditingMediaId] = useState("");
+  const [savingMediaId, setSavingMediaId] = useState("");
+  const [deletingMediaId, setDeletingMediaId] = useState("");
   const [projectNotice, setProjectNotice] = useState("");
   const [updatingProjectId, setUpdatingProjectId] = useState("");
   const [messageNotice, setMessageNotice] = useState("");
@@ -298,6 +337,17 @@ export function AdminPortal() {
     () => adminData.messages.filter((message) => message.status === "Unread").length,
     [adminData.messages]
   );
+  const uploadCategoryOptions = useMemo(() => {
+    const categories: string[] = [...portfolioCategoryOptions];
+
+    adminData.projects.forEach((project) =>
+      addUniqueCategory(categories, project.category)
+    );
+    adminData.media.forEach((asset) => addUniqueCategory(categories, asset.category));
+    addUniqueCategory(categories, uploadDraft.category);
+
+    return categories;
+  }, [adminData.media, adminData.projects, uploadDraft.category]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -387,6 +437,67 @@ export function AdminPortal() {
       );
     } finally {
       setIsSavingUpload(false);
+    }
+  }
+
+  async function handleMediaUpdate(mediaId: string, draft: UploadDraft) {
+    setUploadNotice("");
+    setSavingMediaId(mediaId);
+
+    try {
+      const response = await fetch(
+        `/api/admin/media/${encodeURIComponent(mediaId)}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(draft)
+        }
+      );
+      const payload = await readApiResponse(response);
+
+      applyAdminData(payload.data);
+      setEditingMediaId("");
+      setUploadNotice("Media details updated.");
+    } catch (error) {
+      setUploadNotice(
+        error instanceof Error ? error.message : "Could not update media."
+      );
+    } finally {
+      setSavingMediaId("");
+    }
+  }
+
+  async function handleMediaDelete(asset: AdminMediaAsset) {
+    const confirmed = window.confirm(
+      `Delete ${asset.title}? This removes the media from the admin library and public portfolio.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setUploadNotice("");
+    setDeletingMediaId(asset.id);
+
+    try {
+      const response = await fetch(
+        `/api/admin/media/${encodeURIComponent(asset.id)}`,
+        {
+          method: "DELETE"
+        }
+      );
+      const payload = await readApiResponse(response);
+
+      applyAdminData(payload.data);
+      setUploadNotice(`${asset.title} was deleted.`);
+    } catch (error) {
+      setUploadNotice(
+        error instanceof Error ? error.message : "Could not delete media."
+      );
+    } finally {
+      setDeletingMediaId("");
     }
   }
 
@@ -708,14 +819,21 @@ export function AdminPortal() {
           {activeView === "dashboard" ? <DashboardView data={adminData} /> : null}
           {activeView === "upload" ? (
             <UploadView
+              categoryOptions={uploadCategoryOptions}
               draft={uploadDraft}
               fileInputKey={fileInputKey}
+              editingMediaId={editingMediaId}
+              deletingMediaId={deletingMediaId}
               isSaving={isSavingUpload}
               media={adminData.media}
               notice={uploadNotice}
+              savingMediaId={savingMediaId}
               selectedFile={selectedFile}
               onChange={setUploadDraft}
+              onDeleteMedia={handleMediaDelete}
+              onEditMedia={setEditingMediaId}
               onFileChange={setSelectedFile}
+              onUpdateMedia={handleMediaUpdate}
               onSubmit={handleUploadSubmit}
             />
           ) : null}
@@ -823,26 +941,55 @@ function DashboardView({ data }: { data: AdminStore }) {
 }
 
 function UploadView({
+  categoryOptions,
   draft,
+  deletingMediaId,
+  editingMediaId,
   fileInputKey,
   isSaving,
   media,
   notice,
+  savingMediaId,
   selectedFile,
   onChange,
+  onDeleteMedia,
+  onEditMedia,
   onFileChange,
+  onUpdateMedia,
   onSubmit
 }: {
+  categoryOptions: string[];
   draft: UploadDraft;
+  deletingMediaId: string;
+  editingMediaId: string;
   fileInputKey: number;
   isSaving: boolean;
   media: AdminMediaAsset[];
   notice: string;
+  savingMediaId: string;
   selectedFile: File | null;
   onChange: (draft: UploadDraft) => void;
+  onDeleteMedia: (asset: AdminMediaAsset) => void;
+  onEditMedia: (mediaId: string) => void;
   onFileChange: (file: File | null) => void;
+  onUpdateMedia: (mediaId: string, draft: UploadDraft) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const [mediaSearch, setMediaSearch] = useState("");
+  const filteredMedia = useMemo(() => {
+    const query = mediaSearch.trim().toLowerCase();
+
+    if (!query) {
+      return media;
+    }
+
+    return media.filter((asset) =>
+      [asset.title, asset.fileName, asset.category]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => value.toLowerCase().includes(query))
+    );
+  }, [media, mediaSearch]);
+
   return (
     <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
       <form onSubmit={onSubmit} className="border border-white/10 bg-charcoal p-5 sm:p-6">
@@ -867,12 +1014,24 @@ function UploadView({
               </span>
               <select
                 value={draft.category}
-                onChange={(event) => onChange({ ...draft, category: event.target.value })}
+                onChange={(event) =>
+                  onChange({
+                    ...draft,
+                    category: readCategorySelection(
+                      event.target.value,
+                      draft.category
+                    )
+                  })
+                }
                 className="mt-3 w-full border border-white/10 bg-ink px-4 py-4 text-sm text-white outline-none transition focus:border-gold"
               >
-                {portfolioCategoryOptions.map((category) => (
+                {!isKnownCategory(draft.category, categoryOptions) ? (
+                  <option>{draft.category}</option>
+                ) : null}
+                {categoryOptions.map((category) => (
                   <option key={category}>{category}</option>
                 ))}
+                <option value={addCategoryOption}>Add new category...</option>
               </select>
             </label>
 
@@ -946,25 +1105,50 @@ function UploadView({
       </form>
 
       <article className="border border-white/10 bg-charcoal p-5 sm:p-6">
-        <h2 className="text-xl font-black uppercase text-white">Saved Media</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-xl font-black uppercase text-white">Saved Media</h2>
+          <span className="border border-gold/40 px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold">
+            {media.length} assets
+          </span>
+        </div>
+        <label className="mt-5 block">
+          <span className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-white/50">
+            Search media
+          </span>
+          <input
+            value={mediaSearch}
+            onChange={(event) => setMediaSearch(event.target.value)}
+            placeholder="Search by project title or name"
+            className="mt-3 w-full border border-white/10 bg-ink px-4 py-4 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-gold"
+          />
+        </label>
         <div className="mt-6 space-y-4">
-          {media.length ? (
-            media.slice(0, 5).map((asset) => (
-              <div key={asset.id} className="grid grid-cols-[4.5rem_1fr] gap-4 border border-white/10 bg-ink p-3">
-                <MediaThumb asset={asset} />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-black uppercase text-white">
-                    {asset.title}
-                  </p>
-                  <p className="mt-2 text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold">
-                    {asset.mediaType} / {asset.category}
-                  </p>
-                  <p className="mt-2 truncate text-sm text-white/42">
-                    {asset.fileName ?? "Metadata saved without a file"}
-                  </p>
-                </div>
-              </div>
+          {filteredMedia.length ? (
+            filteredMedia.map((asset) => (
+              <MediaLibraryItem
+                key={asset.id}
+                asset={asset}
+                categoryOptions={categoryOptions}
+                isDeleting={deletingMediaId === asset.id}
+                isEditing={editingMediaId === asset.id}
+                isSaving={savingMediaId === asset.id}
+                onCancelEdit={() => onEditMedia("")}
+                onDelete={() => onDeleteMedia(asset)}
+                onEdit={() => onEditMedia(asset.id)}
+                onSave={(nextDraft) => onUpdateMedia(asset.id, nextDraft)}
+              />
             ))
+          ) : media.length ? (
+            <div className="flex min-h-80 items-center justify-center border border-dashed border-gold/35 bg-ink/70 px-6 text-center">
+              <div>
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.24em] text-gold">
+                  No matches
+                </p>
+                <p className="mt-4 max-w-sm text-sm leading-6 text-white/54">
+                  Try a different project title, file name, or category.
+                </p>
+              </div>
+            </div>
           ) : (
             <div className="flex min-h-80 items-center justify-center border border-dashed border-gold/35 bg-ink/70 px-6 text-center">
               <div>
@@ -980,6 +1164,165 @@ function UploadView({
           )}
         </div>
       </article>
+    </div>
+  );
+}
+
+function MediaLibraryItem({
+  asset,
+  categoryOptions,
+  isDeleting,
+  isEditing,
+  isSaving,
+  onCancelEdit,
+  onDelete,
+  onEdit,
+  onSave
+}: {
+  asset: AdminMediaAsset;
+  categoryOptions: string[];
+  isDeleting: boolean;
+  isEditing: boolean;
+  isSaving: boolean;
+  onCancelEdit: () => void;
+  onDelete: () => void;
+  onEdit: () => void;
+  onSave: (draft: UploadDraft) => void;
+}) {
+  const [draft, setDraft] = useState<UploadDraft>({
+    title: asset.title,
+    category: asset.category,
+    mediaType: asset.mediaType,
+    description: asset.description
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft({
+        title: asset.title,
+        category: asset.category,
+        mediaType: asset.mediaType,
+        description: asset.description
+      });
+    }
+  }, [asset, isEditing]);
+
+  function handleSave() {
+    onSave(draft);
+  }
+
+  if (isEditing) {
+    return (
+      <div className="grid gap-4 border border-gold/35 bg-ink p-3 md:grid-cols-[4.5rem_1fr]">
+        <MediaThumb asset={asset} />
+        <div className="grid gap-3">
+          <input
+            value={draft.title}
+            onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+            className="w-full border border-white/10 bg-charcoal px-3 py-3 text-sm text-white outline-none transition focus:border-gold"
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <select
+              value={draft.category}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  category: readCategorySelection(
+                    event.target.value,
+                    draft.category
+                  )
+                })
+              }
+              className="w-full border border-white/10 bg-charcoal px-3 py-3 text-sm text-white outline-none transition focus:border-gold"
+            >
+              {!isKnownCategory(draft.category, categoryOptions) ? (
+                <option>{draft.category}</option>
+              ) : null}
+              {categoryOptions.map((category) => (
+                <option key={category}>{category}</option>
+              ))}
+              <option value={addCategoryOption}>Add new category...</option>
+            </select>
+            <select
+              value={draft.mediaType}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  mediaType: event.target.value as AdminMediaType
+                })
+              }
+              className="w-full border border-white/10 bg-charcoal px-3 py-3 text-sm text-white outline-none transition focus:border-gold"
+            >
+              <option>Photo</option>
+              <option>Video</option>
+              <option>Gallery</option>
+            </select>
+          </div>
+          <textarea
+            value={draft.description}
+            onChange={(event) =>
+              setDraft({ ...draft, description: event.target.value })
+            }
+            rows={3}
+            className="w-full resize-none border border-white/10 bg-charcoal px-3 py-3 text-sm leading-6 text-white outline-none transition focus:border-gold"
+          />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={handleSave}
+              className="bg-white px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-ink transition hover:bg-gold hover:text-white disabled:cursor-not-allowed disabled:opacity-55"
+            >
+              {isSaving ? "Saving" : "Save"}
+            </button>
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={onCancelEdit}
+              className="border border-white/10 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/60 transition hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-55"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 border border-white/10 bg-ink p-3 md:grid-cols-[4.5rem_1fr_auto]">
+      <MediaThumb asset={asset} />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-black uppercase text-white">
+          {asset.title}
+        </p>
+        <p className="mt-2 text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold">
+          {asset.mediaType} / {asset.category}
+        </p>
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/50">
+          {asset.description || "No description saved yet."}
+        </p>
+        <p className="mt-2 truncate text-sm text-white/34">
+          {asset.fileName ?? "Metadata saved without a file"}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-start gap-3 md:flex-col md:items-end">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="border border-gold/35 px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold transition hover:bg-gold hover:text-ink"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          disabled={isDeleting}
+          onClick={onDelete}
+          className="border border-white/10 px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/55 transition hover:border-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-55"
+        >
+          {isDeleting ? "Deleting" : "Delete"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -1266,9 +1609,11 @@ function MessagesView({
                   <span className="text-gold">{message.status}</span>
                   <a
                     href={getMessageReplyHref(message)}
+                    target="_blank"
+                    rel="noreferrer"
                     className="border border-gold/35 px-3 py-2 text-gold transition hover:bg-gold hover:text-ink"
                   >
-                    Reply by Email
+                    Reply in Gmail
                   </a>
                   <button
                     type="button"

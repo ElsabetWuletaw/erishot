@@ -32,13 +32,56 @@ const supportedExtensions = new Set([
   ".webp"
 ]);
 const categoryMap = new Map([
+  ["africa night", "Africa Night"],
   ["animal", "Animal"],
   ["car", "Cars"],
   ["cars", "Cars"],
+  ["eritrea", "Eritrea"],
+  ["graduation", "Graduation"],
   ["nature", "Nature"],
+  ["portrait", "Portraits"],
+  ["portraits", "Portraits"],
   ["sport", "Sport"],
   ["sports", "Sport"],
   ["street", "Street"]
+]);
+const categoryDescriptionMap = new Map([
+  [
+    "Africa Night",
+    "Nightlife coverage with warm stage light, movement, and candid evening atmosphere."
+  ],
+  [
+    "Eritrea",
+    "Travel documentary frame focused on Eritrean places, details, and everyday texture."
+  ],
+  [
+    "Graduation",
+    "Milestone portrait from a graduation story, shaped around pride, movement, and celebration."
+  ],
+  [
+    "Portraits",
+    "Portrait session frame focused on expression, styling, and a clean editorial mood."
+  ],
+  [
+    "Cars",
+    "Automotive frame built around body lines, reflections, and street-grade energy."
+  ],
+  [
+    "Nature",
+    "Outdoor frame centered on landscape, light, and quiet natural detail."
+  ],
+  [
+    "Sport",
+    "Sports frame built around motion, timing, and competitive energy."
+  ],
+  [
+    "Street",
+    "Street photography frame with candid movement, city texture, and documentary rhythm."
+  ],
+  [
+    "Animal",
+    "Animal-focused frame shaped around character, movement, and natural detail."
+  ]
 ]);
 
 function slugify(value) {
@@ -97,10 +140,44 @@ async function collectFiles(directory) {
   return files;
 }
 
+function formatImportedTitle(category, index) {
+  const titlePrefix =
+    category === "Portraits" ? "Portrait" : category;
+
+  return `${titlePrefix} Frame ${String(index).padStart(2, "0")}`;
+}
+
+function getImportedDescription(category) {
+  return (
+    categoryDescriptionMap.get(category) ??
+    `ERISHOT ${category.toLowerCase()} image from the provided image folder.`
+  );
+}
+
+async function findImportRoot(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const categoryDirectories = entries.filter(
+    (entry) => entry.isDirectory() && categoryMap.has(entry.name.toLowerCase())
+  );
+
+  if (categoryDirectories.length > 0) {
+    return directory;
+  }
+
+  const childDirectories = entries.filter((entry) => entry.isDirectory());
+
+  if (childDirectories.length === 1) {
+    return findImportRoot(path.join(directory, childDirectories[0].name));
+  }
+
+  return directory;
+}
+
 async function main() {
   await mkdir(uploadDirectory, { recursive: true });
 
-  const categoryDirectories = (await readdir(sourceRoot, { withFileTypes: true }))
+  const importRoot = await findImportRoot(sourceRoot);
+  const categoryDirectories = (await readdir(importRoot, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
@@ -113,7 +190,7 @@ async function main() {
       continue;
     }
 
-    const categoryPath = path.join(sourceRoot, directoryName);
+    const categoryPath = path.join(importRoot, directoryName);
     const imagePaths = (await collectFiles(categoryPath)).sort((left, right) =>
       left.localeCompare(right)
     );
@@ -124,7 +201,7 @@ async function main() {
       index += 1;
 
       const extension = path.extname(imagePath).toLowerCase();
-      const relativePath = path.relative(sourceRoot, imagePath);
+      const relativePath = path.relative(importRoot, imagePath);
       const hash = hashValue(relativePath);
       const categorySlug = slugify(category);
       const fileName = `erishot-${categorySlug}-${String(index).padStart(
@@ -135,10 +212,10 @@ async function main() {
       const url = `/uploads/admin/${fileName}`;
       const imageStats = await stat(imagePath);
       const date = formatProjectDate(imageStats.mtime);
-      const title = `${category} ${String(index).padStart(2, "0")}`;
+      const title = formatImportedTitle(category, index);
       const projectId = `import-project-${hash}`;
       const mediaId = `import-media-${hash}`;
-      const description = `Imported ERISHOT ${category.toLowerCase()} image from the provided image folder.`;
+      const description = getImportedDescription(category);
 
       await copyFile(imagePath, targetPath);
       await prisma.project.upsert({
