@@ -41,22 +41,41 @@ function fallbackReviews(): PortfolioReview[] {
 }
 
 export async function getPortfolioReviewSummary(): Promise<PortfolioReviewSummary> {
-  const [reviews, aggregate] = await Promise.all([
-    prisma.portfolioReview.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 20
-    }),
-    prisma.portfolioReview.aggregate({
-      _avg: { rating: true },
-      _count: { rating: true }
-    })
-  ]);
+  let reviews: Array<{
+    id: string;
+    name: string;
+    rating: number;
+    note: string;
+    createdAt: Date;
+  }> = [];
+  let aggregate: {
+    _avg: { rating: number | null };
+    _count: { rating: number };
+  } = {
+    _avg: { rating: null },
+    _count: { rating: 0 }
+  };
+
+  try {
+    [reviews, aggregate] = await Promise.all([
+      prisma.portfolioReview.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 3
+      }),
+      prisma.portfolioReview.aggregate({
+        _avg: { rating: true },
+        _count: { rating: true }
+      })
+    ]);
+  } catch (error) {
+    console.error("Could not load portfolio reviews from the database.", error);
+  }
 
   if (!reviews.length) {
     return {
       averageRating: Number(ratingSummary.score),
       reviewCount: 0,
-      reviews: fallbackReviews()
+      reviews: fallbackReviews().slice(0, 3)
     };
   }
 

@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/frontend/components/brand-logo";
 import { siteNavigation } from "@/frontend/content/site-content";
+import type { AdminSiteSettings } from "@/shared/admin-types";
 
-export function Navbar() {
+type NavbarProps = {
+  settings?: AdminSiteSettings;
+};
+
+export function Navbar({ settings }: NavbarProps) {
   const [hasScrolled, setHasScrolled] = useState(false);
 
   useEffect(() => {
@@ -30,7 +35,7 @@ export function Navbar() {
           className="inline-flex items-center text-white"
           aria-label="ERISHOT homepage"
         >
-          <BrandLogo />
+          <BrandLogo logoUrl={settings?.branding.logoUrl} />
         </a>
 
         <div className="hidden items-center gap-6 text-white/60 md:flex">

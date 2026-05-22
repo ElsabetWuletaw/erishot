@@ -8,9 +8,12 @@ import type { AdminSiteSettings } from "@/shared/admin-types";
 const contactImage =
   "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=85";
 
-const services = ["Wedding", "Portrait", "Cars", "Event", "Commercial"];
+const defaultServices = ["Wedding", "Portrait", "Cars", "Event", "Commercial"];
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type ContactPageProps = {
+  imageUrl?: string;
+  services?: string[];
   settings: AdminSiteSettings;
 };
 
@@ -26,7 +29,12 @@ function getSocialHref(platform: "instagram" | "tiktok", value: string) {
     : `https://www.tiktok.com/@${handle}`;
 }
 
-export function ContactPage({ settings }: ContactPageProps) {
+export function ContactPage({
+  imageUrl = contactImage,
+  services = defaultServices,
+  settings
+}: ContactPageProps) {
+  const serviceOptions = services.length ? services : defaultServices;
   const contactLinks = [
     {
       label: "Email",
@@ -55,14 +63,23 @@ export function ContactPage({ settings }: ContactPageProps) {
     message: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string }>({});
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const email = String(formData.get("email") ?? "").trim();
 
     setIsSubmitting(true);
     setFormStatus({ tone: "idle", message: "" });
+    setFieldErrors({});
+
+    if (!emailPattern.test(email)) {
+      setFieldErrors({ email: "Use a valid email address." });
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/contact", {
@@ -73,7 +90,7 @@ export function ContactPage({ settings }: ContactPageProps) {
         body: JSON.stringify({
           firstName: formData.get("firstName"),
           lastName: formData.get("lastName"),
-          email: formData.get("email"),
+          email,
           phone: formData.get("phone"),
           service: formData.get("service"),
           message: formData.get("message")
@@ -89,17 +106,24 @@ export function ContactPage({ settings }: ContactPageProps) {
       }
 
       form.reset();
+      setFieldErrors({});
       setFormStatus({
         tone: "success",
         message: payload.message ?? "Your message has been saved."
       });
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not submit the message.";
+
+      if (message.toLowerCase().includes("email")) {
+        setFieldErrors({ email: message });
+      }
+
       setFormStatus({
         tone: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Could not submit the message."
+        message
       });
     } finally {
       setIsSubmitting(false);
@@ -119,7 +143,7 @@ export function ContactPage({ settings }: ContactPageProps) {
           transition={{ duration: 0.65, ease: "easeOut" }}
         >
           <Image
-            src={contactImage}
+            src={imageUrl}
             alt="Minimal studio interior with architectural light"
             fill
             priority
@@ -165,6 +189,7 @@ export function ContactPage({ settings }: ContactPageProps) {
 
           <form
             className="grid gap-5"
+            noValidate
             onSubmit={handleSubmit}
           >
             <div className="grid gap-5 sm:grid-cols-2">
@@ -178,6 +203,7 @@ export function ContactPage({ settings }: ContactPageProps) {
 
             <Field
               id="email"
+              error={fieldErrors.email}
               label="Email Address"
               placeholder="Your email address"
               type="email"
@@ -202,7 +228,7 @@ export function ContactPage({ settings }: ContactPageProps) {
                   <option value="" disabled>
                     Select service
                   </option>
-                  {services.map((service) => (
+                  {serviceOptions.map((service) => (
                     <option key={service} value={service}>
                       {service}
                     </option>
@@ -294,11 +320,13 @@ export function ContactPage({ settings }: ContactPageProps) {
 }
 
 function Field({
+  error,
   id,
   label,
   placeholder,
   type = "text"
 }: {
+  error?: string;
   id: string;
   label: string;
   placeholder: string;
@@ -309,6 +337,9 @@ function Field({
       <span className="text-[0.65rem] font-black uppercase text-gold">
         {label}
       </span>
+      {error ? (
+        <span className="text-xs font-black uppercase text-gold">{error}</span>
+      ) : null}
       <input
         id={id}
         name={id}

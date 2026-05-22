@@ -287,9 +287,21 @@ function normalizeSiteSettings(value: unknown): AdminSiteSettings {
   }
 
   const homepage = isRecord(value.homepage) ? value.homepage : {};
+  const branding = isRecord(value.branding) ? value.branding : {};
   const channels = isRecord(value.channels) ? value.channels : {};
+  const savedLogoUrl = readString(
+    branding.logoUrl,
+    defaultAdminSiteSettings.branding.logoUrl
+  );
 
   return {
+    branding: {
+      logoUrl:
+        savedLogoUrl === "/images/erishot-logo.svg" ||
+        savedLogoUrl === "/images/erishot-logo.jpg"
+          ? defaultAdminSiteSettings.branding.logoUrl
+          : savedLogoUrl
+    },
     homepage: {
       heroVideoEnabled: readBoolean(
         homepage.heroVideoEnabled,

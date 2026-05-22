@@ -6,7 +6,11 @@ import Image from "next/image";
 const streetImage =
   "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1300&q=80";
 
-export function CreativeStatement() {
+type CreativeStatementProps = {
+  imageUrl?: string;
+};
+
+export function CreativeStatement({ imageUrl = streetImage }: CreativeStatementProps) {
   return (
     <section className="bg-[#0d0d0c] px-5 py-20 text-white sm:px-8 lg:py-28">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
@@ -18,7 +22,7 @@ export function CreativeStatement() {
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <Image
-            src={streetImage}
+            src={imageUrl}
             alt="Cinematic car photographed in street light"
             fill
             sizes="(min-width: 1024px) 42vw, 100vw"

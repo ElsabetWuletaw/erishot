@@ -20,12 +20,19 @@ function getConfiguredAdminPassword() {
   return process.env.ADMIN_PASSWORD ?? "erishot2026";
 }
 
+function normalizeEnvSecret(value: string | undefined) {
+  return value?.trim().replace(/^["']|["']$/g, "").replaceAll("\\$", "$");
+}
+
 function getConfiguredAdminPasswordHash() {
-  return process.env.ADMIN_PASSWORD_HASH;
+  return normalizeEnvSecret(process.env.ADMIN_PASSWORD_HASH);
 }
 
 function getSessionSecret() {
-  return process.env.ADMIN_SESSION_SECRET ?? "erishot-local-dev-session-secret";
+  return (
+    normalizeEnvSecret(process.env.ADMIN_SESSION_SECRET) ??
+    "erishot-local-dev-session-secret"
+  );
 }
 
 function safeEqual(left: string, right: string) {
@@ -53,6 +60,11 @@ export async function isValidAdminLogin(email: string, password: string) {
   }
 
   if (configuredPasswordHash) {
+    if (!/^\$2[aby]\$\d{2}\$/.test(configuredPasswordHash)) {
+      console.error("ADMIN_PASSWORD_HASH is not a valid bcrypt hash.");
+      return false;
+    }
+
     const adminUser = await prisma.adminUser.upsert({
       where: { email: configuredEmail },
       update: { passwordHash: configuredPasswordHash },

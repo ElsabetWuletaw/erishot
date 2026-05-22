@@ -5,6 +5,9 @@ export type AdminProjectStatus = "Draft" | "Review" | "Published" | "Featured";
 export type ContactMessageStatus = "Unread" | "Open" | "Replied";
 
 export type AdminSiteSettings = {
+  branding: {
+    logoUrl: string;
+  };
   homepage: {
     heroVideoEnabled: boolean;
     featuredProjectsEnabled: boolean;

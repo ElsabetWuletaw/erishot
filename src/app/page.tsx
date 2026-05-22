@@ -21,17 +21,16 @@ export default async function HomePage() {
 
   return (
     <>
-      <Navbar />
+      <Navbar settings={showcase.settings} />
       <main>
         <HeroSection
           eyebrow={showcase.settings.homepage.heroEyebrow}
           headline={showcase.settings.homepage.heroHeadline}
-          imageUrl={showcase.settings.homepage.heroImageUrl}
           primaryLabel={showcase.settings.homepage.heroPrimaryLabel}
           secondaryLabel={showcase.settings.homepage.heroSecondaryLabel}
-          showVideo={showcase.settings.homepage.heroVideoEnabled}
+          showVideo
           subtitle={showcase.settings.homepage.heroSubtitle}
-          videoUrl={showcase.settings.homepage.heroVideoUrl}
+          videoUrl="/videos/erishot-hero.mp4"
         />
         {showcase.settings.homepage.featuredProjectsEnabled ? (
           <FeaturedProjects
@@ -39,8 +38,11 @@ export default async function HomePage() {
             projects={showcase.featuredProjects}
           />
         ) : null}
-        <CreativeStatement />
-        <GalleryPreview items={showcase.galleryPreviewItems} />
+        <CreativeStatement imageUrl={showcase.carStatementImageUrl} />
+        <GalleryPreview
+          categories={showcase.categoryNames}
+          items={showcase.galleryPreviewItems}
+        />
         <AboutPreview />
         <Testimonials />
         {showcase.settings.homepage.bookingCtaEnabled ? (

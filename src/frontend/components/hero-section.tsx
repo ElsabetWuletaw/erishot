@@ -2,10 +2,7 @@
 
 import { motion } from "framer-motion";
 
-const defaultHeroPoster =
-  "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=2200&q=85";
-const defaultHeroVideo =
-  "https://videos.pexels.com/video-files/30728858/13145862_2160_3840_30fps.mp4";
+const defaultHeroVideo = "/videos/erishot-hero.mp4";
 
 type HeroSectionProps = {
   eyebrow?: string;
@@ -21,7 +18,7 @@ type HeroSectionProps = {
 export function HeroSection({
   eyebrow = "ERISHOT presents",
   headline = "Raw Visions",
-  imageUrl = defaultHeroPoster,
+  imageUrl,
   primaryLabel = "Explore Portfolio",
   secondaryLabel = "Book a Shoot",
   showVideo = true,
@@ -40,7 +37,7 @@ export function HeroSection({
           muted
           loop
           playsInline
-          poster={imageUrl}
+          poster={imageUrl || undefined}
           initial={{ scale: 1.08 }}
           animate={{ scale: 1 }}
           transition={{ duration: 8, ease: "easeOut" }}
@@ -50,7 +47,7 @@ export function HeroSection({
       ) : (
         <motion.div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${imageUrl})` }}
+          style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
           initial={{ scale: 1.08 }}
           animate={{ scale: 1 }}
           transition={{ duration: 8, ease: "easeOut" }}
@@ -76,7 +73,7 @@ export function HeroSection({
         <h1 className="text-6xl font-black leading-[0.82] text-white sm:text-8xl lg:text-[10rem]">
           {headline}
         </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-sm font-bold uppercase leading-6 text-white/60 sm:text-base">
+        <p className="mx-auto mt-6 max-w-2xl text-sm font-bold uppercase leading-6 text-gold sm:text-base">
           {subtitle}
         </p>
 

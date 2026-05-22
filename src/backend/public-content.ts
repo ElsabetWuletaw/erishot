@@ -117,6 +117,9 @@ export async function getHomepageShowcase() {
     getPublicPortfolioProjects(),
     getSiteSettings()
   ]);
+  const categoryNames = getPortfolioCategories(portfolioProjects).filter(
+    (category) => category !== "All"
+  );
   const featuredProjects: FeaturedProject[] = portfolioProjects
     .slice(0, 3)
     .map((project) => ({
@@ -125,17 +128,32 @@ export async function getHomepageShowcase() {
       category: project.category,
       imageUrl: project.imageUrl
     }));
-  const galleryPreviewItems: GalleryPreviewItem[] = portfolioProjects
-    .slice(0, 5)
-    .map((project, index) => ({
-      id: project.id,
-      title: project.title,
-      category: project.category,
-      imageUrl: project.imageUrl,
-      size: gallerySizes[index % gallerySizes.length]
-    }));
+  const galleryPreviewItems: GalleryPreviewItem[] = categoryNames
+    .map((category, index) => {
+      const project = portfolioProjects.find(
+        (item) => item.category === category
+      );
+
+      if (!project) {
+        return null;
+      }
+
+      return {
+        id: project.id,
+        title: project.title,
+        category: project.category,
+        imageUrl: project.imageUrl,
+        size: gallerySizes[index % gallerySizes.length]
+      };
+    })
+    .filter((item): item is GalleryPreviewItem => Boolean(item));
+  const carStatementImageUrl = portfolioProjects.find((project) =>
+    project.category.toLowerCase().includes("car")
+  )?.imageUrl;
 
   return {
+    carStatementImageUrl,
+    categoryNames,
     featuredProjects,
     galleryPreviewItems,
     settings

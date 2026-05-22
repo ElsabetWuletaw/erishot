@@ -1,6 +1,9 @@
 import type { AdminSiteSettings } from "@/shared/admin-types";
 
 export const defaultAdminSiteSettings: AdminSiteSettings = {
+  branding: {
+    logoUrl: "/images/erishot-logo-transparent.png"
+  },
   homepage: {
     heroVideoEnabled: true,
     featuredProjectsEnabled: true,

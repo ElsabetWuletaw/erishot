@@ -50,6 +50,9 @@ export const messageStatusUpdateSchema = z.object({
 });
 
 export const siteSettingsSchema = z.object({
+  branding: z.object({
+    logoUrl: z.string().trim().min(1).max(500)
+  }),
   homepage: z.object({
     heroVideoEnabled: z.boolean(),
     featuredProjectsEnabled: z.boolean(),

@@ -1,4 +1,26 @@
-export function BrandLogo() {
+import Image from "next/image";
+
+type BrandLogoProps = {
+  logoUrl?: string;
+};
+
+export function BrandLogo({ logoUrl }: BrandLogoProps) {
+  if (logoUrl) {
+    return (
+      <span className="relative inline-flex h-12 w-40 items-center overflow-hidden sm:w-52" aria-hidden="true">
+        <Image
+          src={logoUrl}
+          alt=""
+          fill
+          sizes="(min-width: 640px) 11rem, 9rem"
+          className="object-contain"
+          priority
+          unoptimized
+        />
+      </span>
+    );
+  }
+
   return (
     <span className="inline-flex w-36 items-center sm:w-44" aria-hidden="true">
       <svg

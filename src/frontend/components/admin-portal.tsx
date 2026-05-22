@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { BrandLogo } from "@/frontend/components/brand-logo";
 import type {
   AdminMediaAsset,
   AdminMediaType,
@@ -44,6 +45,12 @@ type AdminApiResponse = {
   error?: string;
 };
 
+type PublicAdminSummary = {
+  publicProjects: number;
+  mediaAssets: number;
+  categories: number;
+};
+
 const emptyAdminData: AdminStore = {
   projects: [],
   media: [],
@@ -55,7 +62,7 @@ const adminNavItems: Array<{ id: AdminView; label: string; kicker: string }> = [
   { id: "dashboard", label: "Dashboard", kicker: "Overview" },
   { id: "upload", label: "Upload Media", kicker: "New work" },
   { id: "projects", label: "Manage Projects", kicker: "Portfolio" },
-  { id: "homepage", label: "Home Page", kicker: "Front page" },
+  { id: "homepage", label: "Control Home", kicker: "Homepage" },
   { id: "messages", label: "Messages", kicker: "Inbox" },
   { id: "settings", label: "Settings", kicker: "Profile" }
 ];
@@ -106,6 +113,9 @@ function getDashboardStats(data: AdminStore) {
   const draftUpdates = data.projects.filter((project) =>
     ["Draft", "Review"].includes(project.status)
   ).length;
+  const unreadMessages = data.messages.filter(
+    (message) => message.status === "Unread"
+  ).length;
 
   return [
     {
@@ -120,7 +130,7 @@ function getDashboardStats(data: AdminStore) {
     },
     {
       label: "New Messages",
-      value: String(data.messages.filter((message) => message.status !== "Replied").length),
+      value: String(unreadMessages),
       note: `${data.messages.length} total contact messages`
     },
     {
@@ -143,6 +153,22 @@ function getRecentActivity(data: AdminStore) {
   return projectActivity.length
     ? projectActivity.slice(0, 4)
     : ["No saved admin activity yet."];
+}
+
+function getMessageReplyHref(message: ContactMessage) {
+  const subject = `Re: ERISHOT ${message.service}`;
+  const body = [
+    `Hi ${message.firstName},`,
+    "",
+    "",
+    "ERISHOT",
+    "",
+    "---",
+    `Original message from ${message.firstName} ${message.lastName}:`,
+    message.message
+  ].join("\n");
+
+  return `mailto:${message.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 async function readApiResponse(response: Response) {
@@ -184,6 +210,16 @@ export function AdminPortal() {
   const [updatingMessageId, setUpdatingMessageId] = useState("");
   const [settingsNotice, setSettingsNotice] = useState("");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [publicSummary, setPublicSummary] = useState<PublicAdminSummary>({
+    publicProjects: 0,
+    mediaAssets: 0,
+    categories: 0
+  });
+  const loginStats = [
+    { label: "Live projects", value: publicSummary.publicProjects },
+    { label: "Media assets", value: publicSummary.mediaAssets },
+    { label: "Categories", value: publicSummary.categories }
+  ];
 
   const applyAdminData = useCallback((data: AdminStore | undefined) => {
     const nextData = data ?? emptyAdminData;
@@ -223,9 +259,44 @@ export function AdminPortal() {
     };
   }, [applyAdminData]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPublicSummary() {
+      try {
+        const response = await fetch("/api/admin/public-summary", {
+          cache: "no-store"
+        });
+        const payload = (await response.json()) as PublicAdminSummary;
+
+        if (isMounted) {
+          setPublicSummary(payload);
+        }
+      } catch {
+        if (isMounted) {
+          setPublicSummary({
+            publicProjects: 0,
+            mediaAssets: 0,
+            categories: 0
+          });
+        }
+      }
+    }
+
+    loadPublicSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const activeItem = useMemo(
     () => adminNavItems.find((item) => item.id === activeView) ?? adminNavItems[0],
     [activeView]
+  );
+  const unreadMessageCount = useMemo(
+    () => adminData.messages.filter((message) => message.status === "Unread").length,
+    [adminData.messages]
   );
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -451,9 +522,9 @@ export function AdminPortal() {
               </div>
 
               <div className="grid max-w-xl grid-cols-3 border-y border-white/10 py-5 text-center">
-                {["Server auth", "Saved data", "Uploads"].map((label, index) => (
+                {loginStats.map(({ label, value }, index) => (
                   <div key={label} className={index === 1 ? "border-x border-white/10" : ""}>
-                    <p className="text-2xl font-black text-white">0{index + 1}</p>
+                    <p className="text-2xl font-black text-white">{value}</p>
                     <p className="mt-1 text-[0.62rem] font-black uppercase tracking-[0.22em] text-white/45">
                       {label}
                     </p>
@@ -584,6 +655,11 @@ export function AdminPortal() {
                   </span>
                   <span className="mt-1 block text-sm font-black uppercase">
                     {item.label}
+                    {item.id === "messages" && unreadMessageCount ? (
+                      <span className="ml-2 inline-flex min-w-6 justify-center bg-gold px-2 py-1 text-[0.58rem] text-ink">
+                        {unreadMessageCount}
+                      </span>
+                    ) : null}
                   </span>
                 </button>
               );
@@ -609,8 +685,23 @@ export function AdminPortal() {
                 {activeItem.label}
               </h1>
             </div>
-            <div className="border border-white/10 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.2em] text-white/45">
-              Signed in as {sessionEmail || "admin"}
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveView("messages")}
+                className={`px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.2em] transition ${
+                  unreadMessageCount
+                    ? "animate-pulse border border-gold bg-gold text-ink shadow-glow"
+                    : "border border-white/10 text-white/45 hover:border-gold hover:text-gold"
+                }`}
+              >
+                {unreadMessageCount
+                  ? `Urgent messages ${unreadMessageCount}`
+                  : "Notifications 0"}
+              </button>
+              <div className="border border-white/10 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.2em] text-white/45">
+                Signed in as {sessionEmail || "admin"}
+              </div>
             </div>
           </header>
 
@@ -1006,7 +1097,7 @@ function HomepageView({
     <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-2">
       <article className="border border-white/10 bg-charcoal p-5 sm:p-6">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-black uppercase text-white">Homepage Controls</h2>
+          <h2 className="text-xl font-black uppercase text-white">Control Home</h2>
           <button
             type="button"
             onClick={() => setIsEditing((current) => !current)}
@@ -1173,6 +1264,12 @@ function MessagesView({
                 </div>
                 <div className="flex flex-col items-start gap-3 text-[0.62rem] font-black uppercase tracking-[0.2em] sm:items-end">
                   <span className="text-gold">{message.status}</span>
+                  <a
+                    href={getMessageReplyHref(message)}
+                    className="border border-gold/35 px-3 py-2 text-gold transition hover:bg-gold hover:text-ink"
+                  >
+                    Reply by Email
+                  </a>
                   <button
                     type="button"
                     disabled={updatingMessageId === message.id}
@@ -1213,8 +1310,35 @@ function SettingsView({
   return (
     <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-2">
       <article className="border border-white/10 bg-charcoal p-5 sm:p-6">
-        <h2 className="text-xl font-black uppercase text-white">Contact Channels</h2>
+        <h2 className="text-xl font-black uppercase text-white">Brand & Contact</h2>
         <div className="mt-6 space-y-5">
+          <label className="block">
+            <span className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-white/50">
+              Logo image URL
+            </span>
+            <input
+              value={settings.branding.logoUrl}
+              onChange={(event) =>
+                onChange({
+                  ...settings,
+                  branding: {
+                    ...settings.branding,
+                    logoUrl: event.target.value
+                  }
+                })
+              }
+              placeholder="/images/erishot-logo-transparent.png"
+              className="mt-3 w-full border border-white/10 bg-ink px-4 py-4 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-gold"
+            />
+          </label>
+
+          <div className="border border-white/10 bg-ink px-4 py-5">
+            <p className="mb-4 text-[0.62rem] font-black uppercase tracking-[0.2em] text-white/42">
+              Logo preview
+            </p>
+            <BrandLogo logoUrl={settings.branding.logoUrl} />
+          </div>
+
           {[
             ["instagram", "Instagram"],
             ["email", "Email"],

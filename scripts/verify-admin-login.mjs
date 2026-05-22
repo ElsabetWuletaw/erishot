@@ -16,7 +16,10 @@ if (!email || !password) {
 const configuredEmail = (process.env.ADMIN_EMAIL ?? "admin@erishot.com")
   .trim()
   .toLowerCase();
-const configuredPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+const configuredPasswordHash = process.env.ADMIN_PASSWORD_HASH
+  ?.trim()
+  .replace(/^["']|["']$/g, "")
+  .replaceAll("\\$", "$");
 const configuredPassword = process.env.ADMIN_PASSWORD ?? "erishot2026";
 
 const emailMatches = email.trim().toLowerCase() === configuredEmail;

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 
 const aboutImage =
-  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=85";
+  "/images/storyteller.jpg";
 
 const craftNotes = [
   { label: "01", value: "Watch the moment before shaping it." },
@@ -67,7 +67,7 @@ export function AboutPreview() {
         >
           <Image
             src={aboutImage}
-            alt="Monochrome portrait in an editorial style"
+            alt="Story teller portrait against a city skyline"
             fill
             sizes="(min-width: 1024px) 54vw, 100vw"
             className="object-cover grayscale"

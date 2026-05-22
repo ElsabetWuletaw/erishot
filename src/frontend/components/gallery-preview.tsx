@@ -20,11 +20,15 @@ const imageHeights: Record<GalleryPreviewItem["size"], string> = {
 };
 
 type GalleryPreviewProps = {
+  categories?: string[];
   items?: GalleryPreviewItem[];
 };
 
-export function GalleryPreview({ items }: GalleryPreviewProps) {
+export function GalleryPreview({ categories, items }: GalleryPreviewProps) {
   const previewItems = items?.length ? items : galleryPreviewItems;
+  const fragmentCategories = categories?.length
+    ? categories
+    : Array.from(new Set(previewItems.map((item) => item.category)));
 
   return (
     <section
@@ -54,8 +58,8 @@ export function GalleryPreview({ items }: GalleryPreviewProps) {
             viewport={{ once: true, amount: 0.35 }}
             transition={{ duration: 0.55, delay: 0.1, ease: "easeOut" }}
           >
-            A quick scan of portraits, events, cars, weddings, and natural
-            scenes before visitors step into the full archive.
+            {fragmentCategories.join(" / ")}. A quick scan of the live ERISHOT
+            categories before visitors step into the full archive.
           </motion.p>
         </div>
 
