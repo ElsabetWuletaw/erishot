@@ -7,6 +7,7 @@ import {
   getPortfolioCategories,
   getPublicPortfolioProjects
 } from "@/backend/public-content";
+import type { PortfolioProject } from "@/frontend/content/portfolio-content";
 
 export const metadata: Metadata = {
   title: "Contact | ERISHOT",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ContactRoute() {
-  const [settings, projects] = await Promise.all([
+  const [settings, projects]: [Awaited<ReturnType<typeof getSiteSettings>>, PortfolioProject[]] = await Promise.all([
     getSiteSettings(),
     getPublicPortfolioProjects()
   ]);
