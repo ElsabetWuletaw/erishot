@@ -14,9 +14,9 @@ const sizeClasses: Record<GalleryPreviewItem["size"], string> = {
 };
 
 const imageHeights: Record<GalleryPreviewItem["size"], string> = {
-  wide: "min-h-[20rem]",
-  tall: "min-h-[34rem]",
-  standard: "min-h-[20rem]"
+  wide: "min-h-[18rem] sm:min-h-[20rem]",
+  tall: "min-h-[22rem] sm:min-h-[34rem]",
+  standard: "min-h-[18rem] sm:min-h-[20rem]"
 };
 
 type GalleryPreviewProps = {
@@ -46,7 +46,7 @@ export function GalleryPreview({ categories, items }: GalleryPreviewProps) {
             <p className="text-[0.65rem] font-black uppercase text-gold">
               Gallery Index
             </p>
-            <h2 className="mt-4 text-5xl font-black leading-[0.88] text-white sm:text-6xl lg:text-7xl">
+            <h2 className="mt-4 text-4xl font-black leading-[0.88] text-white sm:text-6xl lg:text-7xl">
               FRAGMENTS
             </h2>
           </motion.div>
@@ -63,7 +63,7 @@ export function GalleryPreview({ categories, items }: GalleryPreviewProps) {
           </motion.p>
         </div>
 
-        <div className="grid auto-rows-[20rem] gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid auto-rows-[18rem] gap-3 sm:auto-rows-[20rem] sm:grid-cols-2 lg:grid-cols-4">
           {previewItems.map((item, index) => (
             <motion.article
               key={item.id}

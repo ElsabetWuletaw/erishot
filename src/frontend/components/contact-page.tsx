@@ -131,13 +131,13 @@ export function ContactPage({
   }
 
   return (
-    <main className="min-h-screen bg-ink px-5 pb-16 pt-24 text-white sm:px-8 lg:pb-24 lg:pt-28">
+    <main className="min-h-[100svh] bg-ink px-5 pb-16 pt-24 text-white sm:px-8 md:min-h-screen lg:pb-24 lg:pt-28">
       <section
         id="top"
         className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[0.95fr_1.05fr]"
       >
         <motion.div
-          className="relative min-h-[32rem] overflow-hidden bg-charcoal lg:min-h-[calc(100svh-8rem)]"
+          className="relative min-h-[25rem] overflow-hidden bg-charcoal sm:min-h-[32rem] lg:min-h-[calc(100svh-8rem)]"
           initial={{ opacity: 0, x: -24 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.65, ease: "easeOut" }}
@@ -155,7 +155,7 @@ export function ContactPage({
             <p className="text-[0.65rem] font-black uppercase text-gold">
               Reach out to us
             </p>
-            <h1 className="mt-4 text-5xl font-black uppercase leading-[0.86] text-white sm:text-6xl lg:text-7xl">
+            <h1 className="mt-4 text-4xl font-black uppercase leading-[0.86] text-white sm:text-6xl lg:text-7xl">
               Let&apos;s get
               <br />
               in touch.
@@ -178,7 +178,7 @@ export function ContactPage({
               <p className="text-[0.65rem] font-black uppercase text-gold">
                 Contact Form
               </p>
-              <h2 className="mt-3 text-4xl font-black uppercase leading-none text-white sm:text-5xl">
+              <h2 className="mt-3 text-3xl font-black uppercase leading-none text-white sm:text-5xl">
                 Start a project
               </h2>
             </div>
@@ -279,7 +279,7 @@ export function ContactPage({
             <p className="text-[0.65rem] font-black uppercase text-gold">
               Direct Lines
             </p>
-            <h2 className="mt-3 text-4xl font-black uppercase leading-none text-white sm:text-5xl">
+            <h2 className="mt-3 text-3xl font-black uppercase leading-none text-white sm:text-5xl">
               We&apos;d love to hear from you.
             </h2>
           </div>
@@ -308,7 +308,7 @@ export function ContactPage({
               <h3 className="mt-6 text-xl font-black uppercase text-white">
                 {link.title}
               </h3>
-              <p className="mt-3 text-sm font-bold text-white/60 transition group-hover:text-white">
+              <p className="mt-3 break-words text-sm font-bold text-white/60 transition group-hover:text-white">
                 {link.value}
               </p>
             </motion.a>

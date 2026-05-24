@@ -22,7 +22,7 @@ export function FeaturedProjects({
   return (
     <section
       id="featured-projects"
-      className="bg-ink px-5 py-20 text-white sm:px-8 lg:py-28"
+      className="bg-ink px-5 py-16 text-white sm:px-8 sm:py-20 lg:py-28"
     >
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[4rem_1fr]">
         <motion.div
@@ -39,7 +39,7 @@ export function FeaturedProjects({
 
         <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
           <motion.article
-            className="group relative min-h-[32rem] overflow-hidden bg-charcoal lg:min-h-[46rem]"
+            className="group relative min-h-[24rem] overflow-hidden bg-charcoal sm:min-h-[32rem] lg:min-h-[46rem]"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
@@ -71,7 +71,7 @@ export function FeaturedProjects({
               viewport={{ once: true, amount: 0.35 }}
               transition={{ duration: 0.55, delay: 0.08, ease: "easeOut" }}
             >
-              <div className="relative min-h-[19rem] overflow-hidden bg-charcoal">
+              <div className="relative min-h-[16rem] overflow-hidden bg-charcoal sm:min-h-[19rem]">
                 <Image
                   src={sideProject.imageUrl}
                   alt={`${sideProject.title} project preview`}
@@ -128,7 +128,7 @@ export function FeaturedProjects({
                   </div>
                 </dl>
               </div>
-              <div className="relative min-h-[18rem] overflow-hidden bg-charcoal">
+              <div className="relative min-h-[16rem] overflow-hidden bg-charcoal sm:min-h-[18rem]">
                 <Image
                   src={detailProject.imageUrl}
                   alt={`${detailProject.title} project preview`}

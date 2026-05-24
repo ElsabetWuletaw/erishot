@@ -76,6 +76,11 @@ export function PortfolioGallery({
     });
   }
 
+  function handleCategoryOpen(category: string) {
+    setActiveCategory(category);
+    setSelectedProjectIndex(0);
+  }
+
   function handleGroupedProjectOpen(project: PortfolioProject) {
     const categoryProjects = projects.filter(
       (item) => item.category === project.category
@@ -91,7 +96,7 @@ export function PortfolioGallery({
   return (
     <section
       id="top"
-      className="min-h-screen bg-ink px-5 pb-20 pt-24 text-white sm:px-8 lg:pb-28 lg:pt-28"
+      className="min-h-[100svh] bg-ink px-5 pb-20 pt-24 text-white sm:px-8 md:min-h-screen lg:pb-28 lg:pt-28"
     >
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[4rem_1fr]">
         <motion.div
@@ -111,7 +116,7 @@ export function PortfolioGallery({
               <p className="text-[0.68rem] font-black uppercase text-gold">
                 ERISHOT Archive
               </p>
-              <h1 className="mt-3 text-6xl font-black uppercase leading-[0.82] text-white sm:text-7xl lg:text-8xl">
+              <h1 className="mt-3 text-5xl font-black uppercase leading-[0.82] text-white sm:text-7xl lg:text-8xl">
                 Portfolio
               </h1>
             </div>
@@ -168,7 +173,7 @@ export function PortfolioGallery({
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleCategoryView(group.category)}
+                      onClick={() => handleCategoryOpen(group.category)}
                       className="w-fit border border-gold/45 px-5 py-3 text-[0.65rem] font-black uppercase tracking-[0.18em] text-gold transition hover:bg-gold hover:text-ink"
                     >
                       View More
@@ -231,7 +236,7 @@ function PortfolioProjectTile({
   return (
     <motion.article
       layout
-      className={`group relative min-h-[26rem] overflow-hidden bg-charcoal ${
+      className={`group relative min-h-[21rem] overflow-hidden bg-black sm:min-h-[26rem] ${
         layoutClass ? "md:min-h-0" : ""
       } ${layoutClass}`}
       initial={{ opacity: 0, y: 24 }}
@@ -247,9 +252,9 @@ function PortfolioProjectTile({
         alt={`${project.title} portfolio cover`}
         fill
         sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-        className="object-cover grayscale transition duration-700 group-hover:scale-105 group-hover:grayscale-0"
+        className="object-contain grayscale transition duration-700 group-hover:grayscale-0"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90 transition group-hover:opacity-100" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/10 to-transparent opacity-90 transition group-hover:opacity-100" />
 
       <div className="absolute left-5 top-5 text-[0.62rem] font-black uppercase text-gold">
         {String(index + 1).padStart(2, "0")}
@@ -266,7 +271,7 @@ function PortfolioProjectTile({
         <button
           type="button"
           onClick={onOpen}
-          className="mt-4 border-b border-gold pb-1 text-[0.65rem] font-black uppercase text-gold opacity-0 transition group-hover:opacity-100"
+          className="mt-4 border-b border-gold pb-1 text-[0.65rem] font-black uppercase text-gold opacity-100 transition md:opacity-0 md:group-hover:opacity-100"
         >
           View Project
         </button>

@@ -29,6 +29,9 @@ export type AdminSiteSettings = {
     instagram: string;
     tiktok: string;
   };
+  reviews: {
+    hiddenReviewIds: string[];
+  };
 };
 
 export type AdminProject = {
@@ -77,11 +80,13 @@ export type PortfolioReview = {
   rating: number;
   note: string;
   createdAt: string;
+  hidden: boolean;
 };
 
 export type AdminStore = {
   projects: AdminProject[];
   media: AdminMediaAsset[];
   messages: ContactMessage[];
+  reviews: PortfolioReview[];
   settings: AdminSiteSettings;
 };

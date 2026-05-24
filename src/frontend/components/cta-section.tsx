@@ -12,7 +12,7 @@ export function CTASection({
   return (
     <section
       id="contact"
-      className="bg-ink px-5 py-28 text-white sm:px-8 lg:py-40"
+      className="bg-ink px-5 py-20 text-white sm:px-8 sm:py-28 lg:py-40"
     >
       <motion.div
         className="mx-auto max-w-5xl text-center"
@@ -24,7 +24,7 @@ export function CTASection({
         <p className="text-[0.65rem] font-black uppercase text-white/40">
           Available for select shoots
         </p>
-        <h2 className="mt-5 text-6xl font-black uppercase leading-[0.82] text-white sm:text-8xl lg:text-9xl">
+        <h2 className="mt-5 break-words text-5xl font-black uppercase leading-[0.82] text-white sm:text-8xl lg:text-9xl">
           {headline}
         </h2>
         <p className="mx-auto mt-4 w-fit border-b-2 border-white pb-1 text-sm font-black uppercase italic text-white">

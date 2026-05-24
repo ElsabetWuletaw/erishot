@@ -27,7 +27,7 @@ export default async function PortfolioPage() {
 
   return (
     <>
-      <Navbar settings={settings} />
+      <Navbar currentPath="/portfolio" settings={settings} />
       <main>
         <PortfolioGallery categories={categories} projects={projects} />
         <RatingComments

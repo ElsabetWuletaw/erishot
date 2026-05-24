@@ -27,5 +27,8 @@ export const defaultAdminSiteSettings: AdminSiteSettings = {
     email: "Benalemu25@gmail.com",
     instagram: "Eritshot",
     tiktok: "Eritshot"
+  },
+  reviews: {
+    hiddenReviewIds: []
   }
 };

@@ -45,6 +45,10 @@ export const portfolioReviewSchema = z.object({
   note: z.string().trim().min(3, "Note should be at least 3 characters.").max(500)
 });
 
+export const portfolioReviewVisibilitySchema = z.object({
+  hidden: z.boolean()
+});
+
 export const messageStatusUpdateSchema = z.object({
   status: z.enum(["Unread", "Open", "Replied"])
 });
@@ -73,7 +77,12 @@ export const siteSettingsSchema = z.object({
     email: z.string().trim().email().max(160),
     instagram: z.string().trim().min(1).max(80),
     tiktok: z.string().trim().min(1).max(80)
-  })
+  }),
+  reviews: z
+    .object({
+      hiddenReviewIds: z.array(z.string().trim().min(1).max(120)).default([])
+    })
+    .default({ hiddenReviewIds: [] })
 });
 
 export function getValidationError(error: unknown) {

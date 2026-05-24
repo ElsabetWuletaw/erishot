@@ -12,7 +12,8 @@ import type {
   AdminSiteSettings,
   AdminStore,
   ContactMessage,
-  ContactMessageStatus
+  ContactMessageStatus,
+  PortfolioReview
 } from "@/shared/admin-types";
 import { defaultAdminSiteSettings } from "@/shared/site-settings";
 import { portfolioCategoryOptions } from "@/frontend/content/portfolio-content";
@@ -55,6 +56,7 @@ const emptyAdminData: AdminStore = {
   projects: [],
   media: [],
   messages: [],
+  reviews: [],
   settings: defaultAdminSiteSettings
 };
 
@@ -81,6 +83,7 @@ const messageStatusOrder: ContactMessageStatus[] = [
 ];
 
 const addCategoryOption = "__add_category__";
+const adminPageSize = 8;
 
 const homepageControls: Array<{
   key: keyof Pick<
@@ -120,6 +123,21 @@ function addUniqueCategory(categories: string[], category: string) {
   ) {
     categories.push(nextCategory);
   }
+}
+
+function getPageCount(totalItems: number) {
+  return Math.max(1, Math.ceil(totalItems / adminPageSize));
+}
+
+function getPaginatedItems<T>(items: T[], page: number) {
+  const safePage = Math.min(Math.max(page, 1), getPageCount(items.length));
+  const startIndex = (safePage - 1) * adminPageSize;
+
+  return {
+    page: safePage,
+    pageCount: getPageCount(items.length),
+    items: items.slice(startIndex, startIndex + adminPageSize)
+  };
 }
 
 function isKnownCategory(category: string, categoryOptions: string[]) {
@@ -247,6 +265,8 @@ export function AdminPortal() {
   const [updatingProjectId, setUpdatingProjectId] = useState("");
   const [messageNotice, setMessageNotice] = useState("");
   const [updatingMessageId, setUpdatingMessageId] = useState("");
+  const [reviewNotice, setReviewNotice] = useState("");
+  const [updatingReviewId, setUpdatingReviewId] = useState("");
   const [settingsNotice, setSettingsNotice] = useState("");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [publicSummary, setPublicSummary] = useState<PublicAdminSummary>({
@@ -261,7 +281,14 @@ export function AdminPortal() {
   ];
 
   const applyAdminData = useCallback((data: AdminStore | undefined) => {
-    const nextData = data ?? emptyAdminData;
+    const nextData = data
+      ? {
+          ...emptyAdminData,
+          ...data,
+          reviews: data.reviews ?? [],
+          settings: data.settings ?? defaultAdminSiteSettings
+        }
+      : emptyAdminData;
 
     setAdminData(nextData);
     setSettingsDraft(nextData.settings);
@@ -388,6 +415,7 @@ export function AdminPortal() {
     setUploadNotice("");
     setProjectNotice("");
     setMessageNotice("");
+    setReviewNotice("");
     setSettingsNotice("");
   }
 
@@ -556,6 +584,37 @@ export function AdminPortal() {
       );
     } finally {
       setUpdatingMessageId("");
+    }
+  }
+
+  async function handleReviewVisibilityToggle(review: PortfolioReview) {
+    const nextHidden = !review.hidden;
+    setReviewNotice("");
+    setUpdatingReviewId(review.id);
+
+    try {
+      const response = await fetch(
+        `/api/admin/reviews/${encodeURIComponent(review.id)}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ hidden: nextHidden })
+        }
+      );
+      const payload = await readApiResponse(response);
+
+      applyAdminData(payload.data);
+      setReviewNotice(
+        `${review.name}'s comment is now ${nextHidden ? "hidden" : "visible"}.`
+      );
+    } catch (error) {
+      setReviewNotice(
+        error instanceof Error ? error.message : "Could not update review."
+      );
+    } finally {
+      setUpdatingReviewId("");
     }
   }
 
@@ -849,8 +908,12 @@ export function AdminPortal() {
             <HomepageView
               isSaving={isSavingSettings}
               notice={settingsNotice}
+              reviewNotice={reviewNotice}
+              reviews={adminData.reviews}
               settings={settingsDraft}
+              updatingReviewId={updatingReviewId}
               onChange={setSettingsDraft}
+              onToggleReview={handleReviewVisibilityToggle}
               onSubmit={handleSettingsSubmit}
             />
           ) : null}
@@ -874,6 +937,50 @@ export function AdminPortal() {
         </section>
       </div>
     </main>
+  );
+}
+
+function PaginationControls({
+  itemLabel,
+  page,
+  pageCount,
+  totalItems,
+  onPageChange
+}: {
+  itemLabel: string;
+  page: number;
+  pageCount: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems <= adminPageSize) {
+    return null;
+  }
+
+  return (
+    <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-white/45">
+        Page {page} of {pageCount} / {totalItems} {itemLabel}
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="border border-white/10 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/60 transition hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Prev
+        </button>
+        <button
+          type="button"
+          disabled={page >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+          className="border border-white/10 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/60 transition hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -976,6 +1083,7 @@ function UploadView({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [mediaSearch, setMediaSearch] = useState("");
+  const [mediaPage, setMediaPage] = useState(1);
   const filteredMedia = useMemo(() => {
     const query = mediaSearch.trim().toLowerCase();
 
@@ -989,6 +1097,7 @@ function UploadView({
         .some((value) => value.toLowerCase().includes(query))
     );
   }, [media, mediaSearch]);
+  const paginatedMedia = getPaginatedItems(filteredMedia, mediaPage);
 
   return (
     <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
@@ -1117,14 +1226,17 @@ function UploadView({
           </span>
           <input
             value={mediaSearch}
-            onChange={(event) => setMediaSearch(event.target.value)}
+            onChange={(event) => {
+              setMediaSearch(event.target.value);
+              setMediaPage(1);
+            }}
             placeholder="Search by project title or name"
             className="mt-3 w-full border border-white/10 bg-ink px-4 py-4 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-gold"
           />
         </label>
         <div className="mt-6 space-y-4">
           {filteredMedia.length ? (
-            filteredMedia.map((asset) => (
+            paginatedMedia.items.map((asset) => (
               <MediaLibraryItem
                 key={asset.id}
                 asset={asset}
@@ -1163,6 +1275,13 @@ function UploadView({
             </div>
           )}
         </div>
+        <PaginationControls
+          itemLabel="assets"
+          page={paginatedMedia.page}
+          pageCount={paginatedMedia.pageCount}
+          totalItems={filteredMedia.length}
+          onPageChange={setMediaPage}
+        />
       </article>
     </div>
   );
@@ -1358,6 +1477,28 @@ function ProjectsView({
   updatingProjectId: string;
   onAdvance: (project: AdminProject) => void;
 }) {
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projectPage, setProjectPage] = useState(1);
+  const filteredProjects = useMemo(() => {
+    const query = projectSearch.trim().toLowerCase();
+
+    if (!query) {
+      return projects;
+    }
+
+    return projects.filter((project) =>
+      [
+        project.title,
+        project.category,
+        project.status,
+        project.date,
+        project.description,
+        project.mediaType
+      ].some((value) => value.toLowerCase().includes(query))
+    );
+  }, [projectSearch, projects]);
+  const paginatedProjects = getPaginatedItems(filteredProjects, projectPage);
+
   return (
     <article className="border border-white/10 bg-charcoal">
       <div className="flex flex-col gap-4 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -1368,6 +1509,23 @@ function ProjectsView({
         <span className="border border-gold/40 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.2em] text-gold">
           {projects.length} saved
         </span>
+      </div>
+
+      <div className="border-b border-white/10 p-5 sm:p-6">
+        <label className="block">
+          <span className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-white/50">
+            Search projects
+          </span>
+          <input
+            value={projectSearch}
+            onChange={(event) => {
+              setProjectSearch(event.target.value);
+              setProjectPage(1);
+            }}
+            placeholder="Search title, category, status, date, or description"
+            className="mt-3 w-full border border-white/10 bg-ink px-4 py-4 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-gold"
+          />
+        </label>
       </div>
 
       {notice ? (
@@ -1388,34 +1546,52 @@ function ProjectsView({
             </tr>
           </thead>
           <tbody>
-            {projects.map((project) => (
-              <tr key={project.id} className="border-b border-white/10 last:border-b-0">
-                <td className="px-5 py-5 text-sm font-black uppercase text-white sm:px-6">
-                  {project.title}
-                </td>
-                <td className="px-5 py-5 text-sm text-white/58 sm:px-6">{project.category}</td>
-                <td className="px-5 py-5 sm:px-6">
-                  <span className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-gold">
-                    {project.status}
-                  </span>
-                </td>
-                <td className="px-5 py-5 text-sm text-white/58 sm:px-6">{project.date}</td>
-                <td className="px-5 py-5 sm:px-6">
-                  <button
-                    type="button"
-                    disabled={updatingProjectId === project.id}
-                    onClick={() => onAdvance(project)}
-                    className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-white/60 transition hover:text-gold disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {updatingProjectId === project.id
-                      ? "Saving"
-                      : `Move to ${getNextProjectStatus(project.status)}`}
-                  </button>
+            {filteredProjects.length ? (
+              paginatedProjects.items.map((project) => (
+                <tr key={project.id} className="border-b border-white/10 last:border-b-0">
+                  <td className="px-5 py-5 text-sm font-black uppercase text-white sm:px-6">
+                    {project.title}
+                  </td>
+                  <td className="px-5 py-5 text-sm text-white/58 sm:px-6">{project.category}</td>
+                  <td className="px-5 py-5 sm:px-6">
+                    <span className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-gold">
+                      {project.status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-5 text-sm text-white/58 sm:px-6">{project.date}</td>
+                  <td className="px-5 py-5 sm:px-6">
+                    <button
+                      type="button"
+                      disabled={updatingProjectId === project.id}
+                      onClick={() => onAdvance(project)}
+                      className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-white/60 transition hover:text-gold disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {updatingProjectId === project.id
+                        ? "Saving"
+                        : `Move to ${getNextProjectStatus(project.status)}`}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td className="px-5 py-8 text-sm text-white/52 sm:px-6" colSpan={5}>
+                  No projects match your search.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
+      </div>
+
+      <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+        <PaginationControls
+          itemLabel="projects"
+          page={paginatedProjects.page}
+          pageCount={paginatedProjects.pageCount}
+          totalItems={filteredProjects.length}
+          onPageChange={setProjectPage}
+        />
       </div>
     </article>
   );
@@ -1424,17 +1600,32 @@ function ProjectsView({
 function HomepageView({
   isSaving,
   notice,
+  reviewNotice,
+  reviews,
   settings,
+  updatingReviewId,
   onChange,
+  onToggleReview,
   onSubmit
 }: {
   isSaving: boolean;
   notice: string;
+  reviewNotice: string;
+  reviews: PortfolioReview[];
   settings: AdminSiteSettings;
+  updatingReviewId: string;
   onChange: (settings: AdminSiteSettings) => void;
+  onToggleReview: (review: PortfolioReview) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [reviewPage, setReviewPage] = useState(1);
+  const visibleReviews = reviews.filter((review) => !review.hidden);
+  const hiddenReviews = reviews.length - visibleReviews.length;
+  const averageReviewRating = reviews.length
+    ? reviews.reduce((total, review) => total + review.rating, 0) / reviews.length
+    : 0;
+  const paginatedReviews = getPaginatedItems(reviews, reviewPage);
 
   return (
     <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-2">
@@ -1548,6 +1739,113 @@ function HomepageView({
           {isSaving ? "Saving Settings" : "Save Home Page"}
         </button>
       </article>
+
+      <article className="border border-white/10 bg-charcoal p-5 sm:p-6 lg:col-span-2">
+        <div className="flex flex-col gap-4 border-b border-white/10 pb-5 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-xl font-black uppercase text-white">
+              Ratings & Comments
+            </h2>
+            <p className="mt-2 text-sm text-white/50">
+              Review public portfolio comments and hide anything you do not want shown.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 border border-white/10 text-center">
+            <div className="px-4 py-3">
+              <p className="text-xl font-black text-white">
+                {averageReviewRating.toFixed(1)}
+              </p>
+              <p className="mt-1 text-[0.58rem] font-black uppercase tracking-[0.18em] text-white/42">
+                Avg
+              </p>
+            </div>
+            <div className="border-x border-white/10 px-4 py-3">
+              <p className="text-xl font-black text-white">{visibleReviews.length}</p>
+              <p className="mt-1 text-[0.58rem] font-black uppercase tracking-[0.18em] text-white/42">
+                Visible
+              </p>
+            </div>
+            <div className="px-4 py-3">
+              <p className="text-xl font-black text-white">{hiddenReviews}</p>
+              <p className="mt-1 text-[0.58rem] font-black uppercase tracking-[0.18em] text-white/42">
+                Hidden
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {reviewNotice ? (
+          <p className="mt-5 border border-gold/30 bg-gold/10 px-4 py-3 text-sm text-gold">
+            {reviewNotice}
+          </p>
+        ) : null}
+
+        <div className="mt-5 grid gap-4">
+          {reviews.length ? (
+            paginatedReviews.items.map((review) => (
+              <div
+                key={review.id}
+                className={`grid gap-4 border p-4 md:grid-cols-[1fr_auto] ${
+                  review.hidden
+                    ? "border-white/10 bg-ink/55 opacity-70"
+                    : "border-white/10 bg-ink"
+                }`}
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm font-black uppercase text-white">
+                      {review.name}
+                    </p>
+                    <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold">
+                      {review.rating} / 5
+                    </span>
+                    {review.hidden ? (
+                      <span className="border border-white/10 px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.16em] text-white/50">
+                        Hidden
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 max-w-4xl text-sm leading-6 text-white/62">
+                    {review.note}
+                  </p>
+                  <p className="mt-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/32">
+                    {new Date(review.createdAt).toISOString().slice(0, 10)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={updatingReviewId === review.id}
+                  onClick={() => onToggleReview(review)}
+                  className="h-fit border border-gold/35 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold transition hover:bg-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {updatingReviewId === review.id
+                    ? "Saving"
+                    : review.hidden
+                      ? "Show Comment"
+                      : "Hide Comment"}
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="border border-dashed border-gold/35 bg-ink/70 px-5 py-10 text-center">
+              <p className="text-[0.68rem] font-black uppercase tracking-[0.24em] text-gold">
+                No ratings yet
+              </p>
+              <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-white/54">
+                New public portfolio ratings will appear here for moderation.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <PaginationControls
+          itemLabel="comments"
+          page={paginatedReviews.page}
+          pageCount={paginatedReviews.pageCount}
+          totalItems={reviews.length}
+          onPageChange={setReviewPage}
+        />
+      </article>
     </form>
   );
 }
@@ -1563,25 +1861,66 @@ function MessagesView({
   updatingMessageId: string;
   onAdvance: (message: ContactMessage) => void;
 }) {
+  const [activeStatus, setActiveStatus] = useState<ContactMessageStatus | "All">(
+    "All"
+  );
+  const [messagePage, setMessagePage] = useState(1);
+  const filteredMessages = useMemo(() => {
+    if (activeStatus === "All") {
+      return messages;
+    }
+
+    return messages.filter((message) => message.status === activeStatus);
+  }, [activeStatus, messages]);
+  const paginatedMessages = getPaginatedItems(filteredMessages, messagePage);
+  const statusFilters: Array<ContactMessageStatus | "All"> = [
+    "All",
+    ...messageStatusOrder
+  ];
+
   return (
     <div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr]">
       <article className="border border-white/10 bg-charcoal p-5 sm:p-6">
         <h2 className="text-xl font-black uppercase text-white">Message Status</h2>
-        <div className="mt-6 space-y-4">
-          {messageStatusOrder.map((status) => (
-            <div key={status} className="flex items-center justify-between border-b border-white/10 pb-4 last:border-b-0 last:pb-0">
-              <span className="text-sm font-black uppercase text-white">{status}</span>
-              <span className="text-2xl font-black text-gold">
-                {messages.filter((message) => message.status === status).length}
+        <div className="mt-6 space-y-3">
+          {statusFilters.map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => {
+                setActiveStatus(status);
+                setMessagePage(1);
+              }}
+              className={`flex w-full items-center justify-between border px-4 py-4 text-left transition ${
+                activeStatus === status
+                  ? "border-gold bg-gold/10"
+                  : "border-white/10 bg-ink hover:border-white/25"
+              }`}
+            >
+              <span className="text-sm font-black uppercase text-white">
+                {status}
               </span>
-            </div>
+              <span className="text-2xl font-black text-gold">
+                {status === "All"
+                  ? messages.length
+                  : messages.filter((message) => message.status === status).length}
+              </span>
+            </button>
           ))}
         </div>
       </article>
 
       <article className="border border-white/10 bg-charcoal">
-        <div className="border-b border-white/10 p-5 sm:p-6">
-          <h2 className="text-xl font-black uppercase text-white">Inbox</h2>
+        <div className="flex flex-col gap-3 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <h2 className="text-xl font-black uppercase text-white">Inbox</h2>
+            <p className="mt-2 text-sm text-white/50">
+              Showing {activeStatus === "All" ? "all messages" : activeStatus.toLowerCase()}
+            </p>
+          </div>
+          <span className="border border-gold/40 px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold">
+            {filteredMessages.length} visible
+          </span>
         </div>
 
         {notice ? (
@@ -1591,8 +1930,8 @@ function MessagesView({
         ) : null}
 
         <div>
-          {messages.length ? (
-            messages.map((message) => (
+          {filteredMessages.length ? (
+            paginatedMessages.items.map((message) => (
               <div key={message.id} className="grid gap-4 border-b border-white/10 p-5 last:border-b-0 sm:grid-cols-[1fr_auto] sm:p-6">
                 <div>
                   <p className="text-sm font-black uppercase text-white">
@@ -1628,11 +1967,25 @@ function MessagesView({
                 </div>
               </div>
             ))
+          ) : messages.length ? (
+            <div className="p-5 text-sm leading-6 text-white/52 sm:p-6">
+              No messages match this status.
+            </div>
           ) : (
             <div className="p-5 text-sm leading-6 text-white/52 sm:p-6">
               No contact messages yet.
             </div>
           )}
+        </div>
+
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          <PaginationControls
+            itemLabel="messages"
+            page={paginatedMessages.page}
+            pageCount={paginatedMessages.pageCount}
+            totalItems={filteredMessages.length}
+            onPageChange={setMessagePage}
+          />
         </div>
       </article>
     </div>

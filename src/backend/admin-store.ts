@@ -9,7 +9,8 @@ import type {
   AdminSiteSettings,
   AdminStore,
   ContactMessage,
-  ContactMessageStatus
+  ContactMessageStatus,
+  PortfolioReview
 } from "@/shared/admin-types";
 import { defaultAdminSiteSettings } from "@/shared/site-settings";
 
@@ -71,6 +72,14 @@ type MessageRecord = {
   service: string;
   message: string;
   status: ContactMessageStatus;
+  createdAt: Date;
+};
+
+type ReviewRecord = {
+  id: string;
+  name: string;
+  rating: number;
+  note: string;
   createdAt: Date;
 };
 
@@ -202,6 +211,20 @@ function toMessage(message: MessageRecord): ContactMessage {
   };
 }
 
+function toPortfolioReview(
+  review: ReviewRecord,
+  hiddenReviewIds: string[]
+): PortfolioReview {
+  return {
+    id: review.id,
+    name: review.name,
+    rating: review.rating,
+    note: review.note,
+    createdAt: review.createdAt.toISOString(),
+    hidden: hiddenReviewIds.includes(review.id)
+  };
+}
+
 async function saveUploadedFile(
   file: File | null,
   title: string
@@ -298,6 +321,19 @@ function readString(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value : fallback;
 }
 
+function readStringArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(
+      (item): item is string =>
+        typeof item === "string" && item.trim().length > 0
+    )
+    .map((item) => item.trim());
+}
+
 function normalizeSiteSettings(value: unknown): AdminSiteSettings {
   if (!isRecord(value)) {
     return defaultAdminSiteSettings;
@@ -306,6 +342,7 @@ function normalizeSiteSettings(value: unknown): AdminSiteSettings {
   const homepage = isRecord(value.homepage) ? value.homepage : {};
   const branding = isRecord(value.branding) ? value.branding : {};
   const channels = isRecord(value.channels) ? value.channels : {};
+  const reviews = isRecord(value.reviews) ? value.reviews : {};
   const savedLogoUrl = readString(
     branding.logoUrl,
     defaultAdminSiteSettings.branding.logoUrl
@@ -384,6 +421,9 @@ function normalizeSiteSettings(value: unknown): AdminSiteSettings {
         defaultAdminSiteSettings.channels.instagram
       ),
       tiktok: readString(channels.tiktok, defaultAdminSiteSettings.channels.tiktok)
+    },
+    reviews: {
+      hiddenReviewIds: readStringArray(reviews.hiddenReviewIds)
     }
   };
 }
@@ -399,7 +439,7 @@ export async function getSiteSettings() {
 export async function getAdminData(): Promise<AdminStore> {
   await ensureStarterData();
 
-  const [projects, media, messages, settings] = await Promise.all([
+  const [projects, media, messages, reviews, settings] = await Promise.all([
     prisma.project.findMany({
       orderBy: [{ featured: "desc" }, { updatedAt: "desc" }]
     }),
@@ -409,13 +449,18 @@ export async function getAdminData(): Promise<AdminStore> {
     prisma.contactMessage.findMany({
       orderBy: { createdAt: "desc" }
     }),
+    prisma.portfolioReview.findMany({
+      orderBy: { createdAt: "desc" }
+    }),
     getSiteSettings()
   ]);
+  const hiddenReviewIds = settings.reviews.hiddenReviewIds;
 
   return {
     projects: projects.map(toProject),
     media: media.map(toMedia),
     messages: messages.map(toMessage),
+    reviews: reviews.map((review) => toPortfolioReview(review, hiddenReviewIds)),
     settings
   };
 }
@@ -586,6 +631,27 @@ export async function updateContactMessageStatus(
   }
 
   return getAdminData();
+}
+
+export async function updatePortfolioReviewVisibility(
+  reviewId: string,
+  hidden: boolean
+) {
+  const settings = await getSiteSettings();
+  const hiddenReviewIds = new Set(settings.reviews.hiddenReviewIds);
+
+  if (hidden) {
+    hiddenReviewIds.add(reviewId);
+  } else {
+    hiddenReviewIds.delete(reviewId);
+  }
+
+  return updateSiteSettings({
+    ...settings,
+    reviews: {
+      hiddenReviewIds: Array.from(hiddenReviewIds)
+    }
+  });
 }
 
 export async function updateSiteSettings(input: UpdateSiteSettingsInput) {

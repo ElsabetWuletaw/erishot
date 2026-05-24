@@ -92,16 +92,23 @@ export function PortfolioLightbox({
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
           >
-            <div className="relative min-h-[55svh] overflow-hidden bg-charcoal lg:min-h-full">
+            <div className="relative min-h-[55svh] overflow-hidden bg-black lg:min-h-full">
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute right-4 top-4 z-20 border border-white/25 bg-ink/70 px-4 py-3 text-[0.65rem] font-black uppercase text-white backdrop-blur transition active:bg-white active:text-ink lg:hidden"
+              >
+                Close
+              </button>
               <Image
                 src={project.imageUrl}
                 alt={`${project.title} expanded project view`}
                 fill
                 sizes="(min-width: 1024px) 58vw, 100vw"
-                className="object-cover"
+                className="object-contain"
                 priority
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20" />
             </div>
 
             <aside className="flex flex-col justify-between border border-white/10 bg-ink p-5 sm:p-8">
@@ -113,7 +120,7 @@ export function PortfolioLightbox({
                     </p>
                     <h2
                       id="portfolio-lightbox-title"
-                      className="mt-4 text-5xl font-black uppercase leading-[0.86] text-white sm:text-6xl"
+                      className="mt-4 text-4xl font-black uppercase leading-[0.86] text-white sm:text-6xl"
                     >
                       {project.title}
                     </h2>

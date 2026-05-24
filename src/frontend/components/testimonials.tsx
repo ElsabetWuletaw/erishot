@@ -27,10 +27,10 @@ export function Testimonials() {
   return (
     <section
       id="testimonials"
-      className="bg-ink px-5 py-20 text-white sm:px-8 lg:py-28"
+      className="bg-ink px-5 py-16 text-white sm:px-8 sm:py-20 lg:py-28"
     >
       <div className="mx-auto max-w-7xl">
-        <div className="mb-14 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+        <div className="mb-10 grid gap-6 sm:mb-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -40,7 +40,7 @@ export function Testimonials() {
             <p className="text-[0.65rem] font-black uppercase text-gold">
               Method
             </p>
-            <h2 className="mt-4 text-5xl font-black uppercase leading-[0.86] text-white sm:text-6xl lg:text-7xl">
+            <h2 className="mt-4 text-4xl font-black uppercase leading-[0.86] text-white sm:text-6xl lg:text-7xl">
               HOW WE BUILD
               <br />
               THE FRAME

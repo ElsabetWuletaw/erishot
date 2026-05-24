@@ -21,7 +21,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Navbar settings={showcase.settings} />
+      <Navbar currentPath="/" settings={showcase.settings} />
       <main>
         <HeroSection
           eyebrow={showcase.settings.homepage.heroEyebrow}

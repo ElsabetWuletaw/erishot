@@ -14,7 +14,7 @@ const craftNotes = [
 
 export function AboutPreview() {
   return (
-    <section id="about" className="bg-ink px-5 py-20 text-white sm:px-8 lg:py-28">
+    <section id="about" className="bg-ink px-5 py-16 text-white sm:px-8 sm:py-20 lg:py-28">
       <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
         <motion.div
           initial={{ opacity: 0, x: -28 }}
@@ -25,7 +25,7 @@ export function AboutPreview() {
           <p className="text-[0.65rem] font-black uppercase text-gold">
             About Erishot
           </p>
-          <h2 className="mt-4 text-5xl font-black uppercase leading-[0.86] text-white sm:text-6xl lg:text-7xl">
+          <h2 className="mt-4 text-4xl font-black uppercase leading-[0.86] text-white sm:text-6xl lg:text-7xl">
             THE STORY
             <br />
             TELLER
@@ -59,7 +59,7 @@ export function AboutPreview() {
         </motion.div>
 
         <motion.div
-          className="relative min-h-[34rem] overflow-hidden bg-charcoal lg:min-h-[42rem]"
+          className="relative min-h-[26rem] overflow-hidden bg-charcoal sm:min-h-[34rem] lg:min-h-[42rem]"
           initial={{ opacity: 0, x: 28 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.25 }}

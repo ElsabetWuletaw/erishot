@@ -1,4 +1,5 @@
 import { prisma } from "@/backend/prisma";
+import { getSiteSettings } from "@/backend/admin-store";
 import { editorialNotes, ratingSummary } from "@/frontend/content/portfolio-content";
 import type { PortfolioReview } from "@/shared/admin-types";
 
@@ -22,13 +23,15 @@ function toPortfolioReview(review: {
   rating: number;
   note: string;
   createdAt: Date;
+  hidden?: boolean;
 }): PortfolioReview {
   return {
     id: review.id,
     name: review.name,
     rating: review.rating,
     note: review.note,
-    createdAt: review.createdAt.toISOString()
+    createdAt: review.createdAt.toISOString(),
+    hidden: Boolean(review.hidden)
   };
 }
 
@@ -38,11 +41,17 @@ function fallbackReviews(): PortfolioReview[] {
     name: note.author,
     rating: ratingSummary.maxRating,
     note: note.text,
-    createdAt: new Date(Date.UTC(2026, 4, 1 + index)).toISOString()
+    createdAt: new Date(Date.UTC(2026, 4, 1 + index)).toISOString(),
+    hidden: false
   }));
 }
 
 export async function getPortfolioReviewSummary(): Promise<PortfolioReviewSummary> {
+  const settings = await getSiteSettings();
+  const hiddenReviewIds = settings.reviews.hiddenReviewIds;
+  const visibleWhere = hiddenReviewIds.length
+    ? { id: { notIn: hiddenReviewIds } }
+    : {};
   let reviews: Array<{
     id: string;
     name: string;
@@ -61,10 +70,12 @@ export async function getPortfolioReviewSummary(): Promise<PortfolioReviewSummar
   try {
     [reviews, aggregate] = await Promise.all([
       prisma.portfolioReview.findMany({
+        where: visibleWhere,
         orderBy: { createdAt: "desc" },
         take: visibleReviewLimit
       }),
       prisma.portfolioReview.aggregate({
+        where: visibleWhere,
         _avg: { rating: true },
         _count: { rating: true }
       })
@@ -74,10 +85,14 @@ export async function getPortfolioReviewSummary(): Promise<PortfolioReviewSummar
   }
 
   if (!reviews.length) {
+    const visibleFallbackReviews = fallbackReviews().filter(
+      (review) => !hiddenReviewIds.includes(review.id)
+    );
+
     return {
       averageRating: Number(ratingSummary.score),
       reviewCount: 0,
-      reviews: fallbackReviews().slice(0, visibleReviewLimit)
+      reviews: visibleFallbackReviews.slice(0, visibleReviewLimit)
     };
   }
 

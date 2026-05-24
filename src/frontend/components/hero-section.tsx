@@ -28,7 +28,7 @@ export function HeroSection({
   return (
     <section
       id="top"
-      className="relative flex min-h-screen items-center overflow-hidden px-5 pt-16 sm:px-8"
+      className="relative flex min-h-[100svh] items-center overflow-hidden px-5 pb-8 pt-16 sm:px-8 md:min-h-screen md:pb-0"
     >
       {showVideo ? (
         <motion.video
@@ -70,7 +70,7 @@ export function HeroSection({
         <p className="mb-4 text-[0.68rem] font-black uppercase text-white/60">
           {eyebrow}
         </p>
-        <h1 className="text-6xl font-black leading-[0.82] text-white sm:text-8xl lg:text-[10rem]">
+        <h1 className="break-words text-5xl font-black leading-[0.82] text-white sm:text-8xl lg:text-[10rem]">
           {headline}
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-sm font-bold uppercase leading-6 text-gold sm:text-base">

@@ -12,10 +12,10 @@ type CreativeStatementProps = {
 
 export function CreativeStatement({ imageUrl = streetImage }: CreativeStatementProps) {
   return (
-    <section className="bg-[#0d0d0c] px-5 py-20 text-white sm:px-8 lg:py-28">
+    <section className="bg-[#0d0d0c] px-5 py-16 text-white sm:px-8 sm:py-20 lg:py-28">
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <motion.div
-          className="relative min-h-[28rem] overflow-hidden bg-charcoal lg:min-h-[36rem]"
+          className="relative min-h-[24rem] overflow-hidden bg-charcoal sm:min-h-[28rem] lg:min-h-[36rem]"
           initial={{ opacity: 0, x: -28 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.35 }}
@@ -41,7 +41,7 @@ export function CreativeStatement({ imageUrl = streetImage }: CreativeStatementP
           <p className="text-[0.65rem] font-black uppercase text-gold">
             Featured Direction
           </p>
-          <h2 className="mt-4 text-5xl font-black leading-[0.86] text-white sm:text-6xl lg:text-7xl">
+          <h2 className="mt-4 text-4xl font-black leading-[0.86] text-white sm:text-6xl lg:text-7xl">
             STREET MACHINE
           </h2>
           <p className="mt-5 max-w-lg text-sm font-bold uppercase leading-6 text-white/60">

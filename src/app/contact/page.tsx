@@ -31,7 +31,7 @@ export default async function ContactRoute() {
 
   return (
     <>
-      <Navbar settings={settings} />
+      <Navbar currentPath="/contact" settings={settings} />
       <ContactPage
         imageUrl={contactImageUrl}
         services={services}
