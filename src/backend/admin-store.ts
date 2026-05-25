@@ -84,6 +84,13 @@ type ReviewRecord = {
 };
 
 const uploadDirectory = path.join(process.cwd(), "public", "uploads", "admin");
+const readOnlyFileSystemCodes = new Set([
+  "EACCES",
+  "ENOENT",
+  "ENOTDIR",
+  "EPERM",
+  "EROFS"
+]);
 
 const starterProjects: AdminProject[] = [
   {
@@ -156,6 +163,19 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
     .slice(0, 70);
+}
+
+function isReadOnlyFileSystemError(error: unknown) {
+  return (
+    error instanceof Error &&
+    readOnlyFileSystemCodes.has(
+      String((error as NodeJS.ErrnoException).code ?? "")
+    )
+  );
+}
+
+function toInlineDataUrl(fileType: string, fileBuffer: Buffer) {
+  return `data:${fileType};base64,${fileBuffer.toString("base64")}`;
 }
 
 function formatProjectDate(date: Date) {
@@ -233,21 +253,34 @@ async function saveUploadedFile(
     return {};
   }
 
-  await mkdir(uploadDirectory, { recursive: true });
-
   const extension = path.extname(file.name) || ".bin";
   const fileName = `${Date.now()}-${slugify(title) || "media"}${extension}`;
   const filePath = path.join(uploadDirectory, fileName);
+  const fileType = file.type || "application/octet-stream";
   const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-  await writeFile(filePath, fileBuffer);
+  try {
+    await mkdir(uploadDirectory, { recursive: true });
+    await writeFile(filePath, fileBuffer);
 
-  return {
-    fileName,
-    fileType: file.type || "application/octet-stream",
-    fileSize: file.size,
-    url: `/uploads/admin/${fileName}`
-  };
+    return {
+      fileName,
+      fileType,
+      fileSize: file.size,
+      url: `/uploads/admin/${fileName}`
+    };
+  } catch (error) {
+    if (!isReadOnlyFileSystemError(error)) {
+      throw error;
+    }
+
+    return {
+      fileName,
+      fileType,
+      fileSize: file.size,
+      url: toInlineDataUrl(fileType, fileBuffer)
+    };
+  }
 }
 
 async function deleteStoredUpload(url: string | null) {

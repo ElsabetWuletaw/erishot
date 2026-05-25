@@ -13,19 +13,14 @@ type PortfolioGalleryProps = {
 
 type ActiveCategory = string;
 
-const layoutClasses = [
-  "md:col-span-4 md:row-span-3",
-  "md:col-span-2 md:row-span-2",
-  "md:col-span-3 md:row-span-3",
-  "md:col-span-3 md:row-span-2",
-  "md:col-span-2 md:row-span-3",
-  "md:col-span-4 md:row-span-2",
-  "md:col-span-3 md:row-span-2",
-  "md:col-span-3 md:row-span-3"
-];
+const categoryPageSize = 6;
 
 function slugifyCategory(category: string) {
   return category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function getPageCount(totalItems: number) {
+  return Math.max(1, Math.ceil(totalItems / categoryPageSize));
 }
 
 export function PortfolioGallery({
@@ -36,6 +31,7 @@ export function PortfolioGallery({
   const [selectedProjectIndex, setSelectedProjectIndex] = useState<
     number | null
   >(null);
+  const [categoryPage, setCategoryPage] = useState(1);
 
   const filteredProjects = useMemo(() => {
     if (activeCategory === "All") {
@@ -46,6 +42,13 @@ export function PortfolioGallery({
       (project) => project.category === activeCategory
     );
   }, [activeCategory, projects]);
+  const categoryPageCount = getPageCount(filteredProjects.length);
+  const safeCategoryPage = Math.min(categoryPage, categoryPageCount);
+  const visibleCategoryProjects = useMemo(() => {
+    const startIndex = (safeCategoryPage - 1) * categoryPageSize;
+
+    return filteredProjects.slice(startIndex, startIndex + categoryPageSize);
+  }, [filteredProjects, safeCategoryPage]);
   const categoryPreviews = useMemo(
     () =>
       categories
@@ -67,6 +70,7 @@ export function PortfolioGallery({
 
   function handleCategoryView(category: string) {
     setActiveCategory(category);
+    setCategoryPage(1);
     setSelectedProjectIndex(null);
     window.requestAnimationFrame(() => {
       document.getElementById("top")?.scrollIntoView({
@@ -78,6 +82,7 @@ export function PortfolioGallery({
 
   function handleCategoryOpen(category: string) {
     setActiveCategory(category);
+    setCategoryPage(1);
     setSelectedProjectIndex(0);
   }
 
@@ -90,6 +95,9 @@ export function PortfolioGallery({
     );
 
     setActiveCategory(project.category);
+    setCategoryPage(
+      projectIndex >= 0 ? Math.floor(projectIndex / categoryPageSize) + 1 : 1
+    );
     setSelectedProjectIndex(projectIndex >= 0 ? projectIndex : 0);
   }
 
@@ -194,20 +202,39 @@ export function PortfolioGallery({
               ))}
             </div>
           ) : (
-            <motion.div
-              layout
-              className="grid auto-rows-[12rem] gap-4 md:grid-cols-6 lg:auto-rows-[13rem]"
-            >
-              {filteredProjects.map((project, index) => (
-                <PortfolioProjectTile
-                  key={project.id}
-                  index={index}
-                  layoutClass={layoutClasses[index % layoutClasses.length]}
-                  project={project}
-                  onOpen={() => setSelectedProjectIndex(index)}
-                />
-              ))}
-            </motion.div>
+            <div>
+              <motion.div layout className="grid gap-4 md:grid-cols-2">
+                {visibleCategoryProjects.map((project, index) => {
+                  const projectIndex =
+                    (safeCategoryPage - 1) * categoryPageSize + index;
+
+                  return (
+                    <PortfolioProjectTile
+                      key={project.id}
+                      index={projectIndex}
+                      project={project}
+                      onOpen={() => setSelectedProjectIndex(projectIndex)}
+                    />
+                  );
+                })}
+              </motion.div>
+
+              <PortfolioPagination
+                page={safeCategoryPage}
+                pageCount={categoryPageCount}
+                totalItems={filteredProjects.length}
+                onPageChange={(page) => {
+                  setCategoryPage(page);
+                  setSelectedProjectIndex(null);
+                  window.requestAnimationFrame(() => {
+                    document.getElementById("top")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start"
+                    });
+                  });
+                }}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -219,6 +246,68 @@ export function PortfolioGallery({
         onNavigate={setSelectedProjectIndex}
       />
     </section>
+  );
+}
+
+function PortfolioPagination({
+  page,
+  pageCount,
+  totalItems,
+  onPageChange
+}: {
+  page: number;
+  pageCount: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems <= categoryPageSize) {
+    return null;
+  }
+
+  return (
+    <nav
+      aria-label="Portfolio category pagination"
+      className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p className="text-[0.62rem] font-black uppercase tracking-[0.2em] text-white/45">
+        Page {page} of {pageCount} / {totalItems} projects
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="border border-white/10 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/60 transition hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Prev
+        </button>
+        {Array.from({ length: pageCount }, (_, index) => index + 1).map(
+          (pageNumber) => (
+            <button
+              key={pageNumber}
+              type="button"
+              aria-current={pageNumber === page ? "page" : undefined}
+              onClick={() => onPageChange(pageNumber)}
+              className={`min-w-11 border px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] transition ${
+                pageNumber === page
+                  ? "border-gold bg-gold text-ink"
+                  : "border-white/10 text-white/60 hover:border-gold hover:text-gold"
+              }`}
+            >
+              {pageNumber}
+            </button>
+          )
+        )}
+        <button
+          type="button"
+          disabled={page >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+          className="border border-white/10 px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/60 transition hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+        </button>
+      </div>
+    </nav>
   );
 }
 
