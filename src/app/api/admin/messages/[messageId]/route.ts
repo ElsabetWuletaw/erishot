@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { messageId: string } }
+  { params }: { params: Promise<{ messageId: string }> }
 ) {
-  const session = getAdminSession();
+  const session = await getAdminSession();
 
   if (!session) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -22,8 +22,10 @@ export async function PATCH(
   try {
     const body = messageStatusUpdateSchema.parse(await request.json());
 
+    const { messageId } = await params;
+
     return NextResponse.json({
-      data: await updateContactMessageStatus(params.messageId, body.status)
+      data: await updateContactMessageStatus(messageId, body.status)
     });
   } catch (error) {
     return NextResponse.json(

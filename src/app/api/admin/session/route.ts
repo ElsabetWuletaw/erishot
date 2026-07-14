@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = getAdminSession();
+  const session = await getAdminSession();
 
   if (!session) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });

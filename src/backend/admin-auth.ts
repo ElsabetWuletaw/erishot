@@ -118,8 +118,8 @@ export function verifyAdminSessionToken(token: string | undefined) {
   }
 }
 
-export function getAdminSession() {
-  const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
+export async function getAdminSession() {
+  const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   return verifyAdminSessionToken(token);
 }
 

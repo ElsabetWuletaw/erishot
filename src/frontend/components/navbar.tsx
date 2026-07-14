@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BrandLogo } from "@/frontend/components/brand-logo";
 import { siteNavigation } from "@/frontend/content/site-content";
 import type { AdminSiteSettings } from "@/shared/admin-types";
@@ -23,10 +24,6 @@ export function Navbar({ currentPath = "/", settings }: NavbarProps) {
 
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [currentPath]);
 
   useEffect(() => {
     if (!isMobileMenuOpen) {
@@ -79,23 +76,23 @@ export function Navbar({ currentPath = "/", settings }: NavbarProps) {
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 text-[0.68rem] font-black uppercase sm:px-8">
-        <a
+        <Link
           href="/"
           className="inline-flex items-center text-white"
           aria-label="ERISHOT homepage"
         >
           <BrandLogo logoUrl={settings?.branding.logoUrl} />
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-6 text-white/60 md:flex">
           {siteNavigation.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="transition hover:text-white"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -160,7 +157,7 @@ export function Navbar({ currentPath = "/", settings }: NavbarProps) {
               const isActive = isActiveLink(link.href);
 
               return (
-                <a
+                <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -172,17 +169,17 @@ export function Navbar({ currentPath = "/", settings }: NavbarProps) {
                 >
                   <span className="whitespace-nowrap">{link.label}</span>
                   <span aria-hidden="true">&rarr;</span>
-                </a>
+                </Link>
               );
             })}
           </div>
-          <a
+          <Link
             href="/contact"
             onClick={() => setIsMobileMenuOpen(false)}
             className="mt-3 flex min-h-12 items-center justify-center px-4 py-3 text-center text-[0.68rem] font-black uppercase bg-white text-ink transition active:bg-gold"
           >
             Book a Session
-          </a>
+          </Link>
         </div>
       </div>
     </header>

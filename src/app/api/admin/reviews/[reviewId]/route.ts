@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
-  const session = getAdminSession();
+  const session = await getAdminSession();
 
   if (!session) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -22,8 +22,10 @@ export async function PATCH(
   try {
     const body = portfolioReviewVisibilitySchema.parse(await request.json());
 
+    const { reviewId } = await params;
+
     return NextResponse.json({
-      data: await updatePortfolioReviewVisibility(params.reviewId, body.hidden)
+      data: await updatePortfolioReviewVisibility(reviewId, body.hidden)
     });
   } catch (error) {
     return NextResponse.json(

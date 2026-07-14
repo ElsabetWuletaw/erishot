@@ -462,11 +462,16 @@ function normalizeSiteSettings(value: unknown): AdminSiteSettings {
 }
 
 export async function getSiteSettings() {
-  const setting = await prisma.siteSetting.findUnique({
-    where: { key: "site-settings" }
-  });
+  try {
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: "site-settings" }
+    });
 
-  return normalizeSiteSettings(setting?.value);
+    return normalizeSiteSettings(setting?.value);
+  } catch (error) {
+    console.error("Could not load site settings from the database.", error);
+    return defaultAdminSiteSettings;
+  }
 }
 
 export async function getAdminData(): Promise<AdminStore> {

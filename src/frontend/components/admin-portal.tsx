@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BrandLogo } from "@/frontend/components/brand-logo";
@@ -673,9 +674,9 @@ export function AdminPortal() {
               transition={{ duration: 0.6 }}
               className="space-y-8"
             >
-              <a href="/" className="inline-flex text-[0.68rem] font-black uppercase tracking-[0.34em] text-white">
+              <Link href="/" className="inline-flex text-[0.68rem] font-black uppercase tracking-[0.34em] text-white">
                 ERISHOT
-              </a>
+              </Link>
 
               <div className="max-w-xl">
                 <p className="mb-4 text-[0.7rem] font-black uppercase tracking-[0.32em] text-gold">
@@ -788,9 +789,9 @@ export function AdminPortal() {
         <aside className="border-b border-white/10 bg-charcoal/92 px-5 py-5 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:px-6">
           <div className="flex items-center justify-between gap-4 lg:block">
             <div>
-              <a href="/" className="text-[0.68rem] font-black uppercase tracking-[0.34em] text-white">
+              <Link href="/" className="text-[0.68rem] font-black uppercase tracking-[0.34em] text-white">
                 ERISHOT
-              </a>
+              </Link>
               <p className="mt-3 text-[0.62rem] font-black uppercase tracking-[0.24em] text-gold">
                 Admin Control
               </p>
@@ -1315,17 +1316,6 @@ function MediaLibraryItem({
     description: asset.description
   });
 
-  useEffect(() => {
-    if (isEditing) {
-      setDraft({
-        title: asset.title,
-        category: asset.category,
-        mediaType: asset.mediaType,
-        description: asset.description
-      });
-    }
-  }, [asset, isEditing]);
-
   function handleSave() {
     onSave(draft);
   }
@@ -1428,7 +1418,15 @@ function MediaLibraryItem({
       <div className="flex flex-wrap items-start gap-3 md:flex-col md:items-end">
         <button
           type="button"
-          onClick={onEdit}
+          onClick={() => {
+            setDraft({
+              title: asset.title,
+              category: asset.category,
+              mediaType: asset.mediaType,
+              description: asset.description
+            });
+            onEdit();
+          }}
           className="border border-gold/35 px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.18em] text-gold transition hover:bg-gold hover:text-ink"
         >
           Edit

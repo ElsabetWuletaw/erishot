@@ -22,7 +22,7 @@ function readUploadedFile(formData: FormData) {
 }
 
 export async function POST(request: Request) {
-  const session = getAdminSession();
+  const session = await getAdminSession();
 
   if (!session) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });

@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { mediaId: string } }
+  { params }: { params: Promise<{ mediaId: string }> }
 ) {
-  const session = getAdminSession();
+  const session = await getAdminSession();
 
   if (!session) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -22,8 +22,10 @@ export async function PATCH(
   try {
     const body = adminMediaSchema.parse(await request.json());
 
+    const { mediaId } = await params;
+
     return NextResponse.json({
-      data: await updateAdminMedia(params.mediaId, body)
+      data: await updateAdminMedia(mediaId, body)
     });
   } catch (error) {
     return NextResponse.json(
@@ -35,17 +37,19 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { mediaId: string } }
+  { params }: { params: Promise<{ mediaId: string }> }
 ) {
-  const session = getAdminSession();
+  const session = await getAdminSession();
 
   if (!session) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
   try {
+    const { mediaId } = await params;
+
     return NextResponse.json({
-      data: await deleteAdminMedia(params.mediaId)
+      data: await deleteAdminMedia(mediaId)
     });
   } catch (error) {
     return NextResponse.json(
